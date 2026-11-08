@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { cacheLife } from "next/cache";
 import { cachedBoard, type BoardRow } from "@/lib/board";
-import { officialAssets, symbolsFor } from "@/lib/market";
-import { CHAIN, CHAINS, type ChainKey } from "@/lib/chains";
+import { symbolLists } from "@/lib/lists";
+import { CHAIN, type ChainKey } from "@/lib/chains";
 import { ChainTabs } from "@/components/chain-tabs";
 import { nextOpen, sessionAt } from "@/lib/session";
 import { pct, verdict, type Call } from "@/lib/verdict";
@@ -221,18 +221,6 @@ function StatStrip() {
       ))}
     </section>
   );
-}
-
-async function symbolLists() {
-  "use cache";
-  cacheLife({ stale: 3600, revalidate: 3600, expire: 86400 });
-  const lists = await Promise.all(
-    CHAINS.map(async (c) => {
-      const assets = await officialAssets(c).catch(() => new Map());
-      return [c, symbolsFor(c).filter((s) => assets.has(s)).map((s) => ({ symbol: s, name: assets.get(s)!.name }))] as const;
-    }),
-  );
-  return Object.fromEntries(lists) as Record<ChainKey, { symbol: string; name: string }[]>;
 }
 
 async function Form() {

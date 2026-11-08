@@ -4,8 +4,8 @@ import { Suspense } from "react";
 import { after, connection } from "next/server";
 import { track } from "@/lib/track";
 import { checkTrade, CheckError, type CheckResult } from "@/lib/check";
-import { officialAssets, symbolsFor } from "@/lib/market";
-import { CHAIN, CHAINS, chainOf, type ChainKey } from "@/lib/chains";
+import { symbolLists } from "@/lib/lists";
+import { CHAIN, chainOf, type ChainKey } from "@/lib/chains";
 import { SESSION_LABEL } from "@/lib/session";
 import { pct, usdFmt, type Call } from "@/lib/verdict";
 import { CheckForm } from "@/components/check-form";
@@ -59,26 +59,39 @@ export default function CheckPage(props: Props) {
 
 function Loading() {
   return (
-    <div className="pt-6">
-      <div className="h-5 w-32 rounded bg-panel" />
-      <div className="mt-5 h-12 w-2/3 max-w-xl rounded-lg bg-panel" />
+    <div className="pt-8">
+      <div className="h-4 w-28 bg-panel" />
+      <div className="panel shimmer mt-5 h-[118px]" />
       <CheckLoading />
     </div>
   );
 }
 
+/** The check page: the trade form at the top, the answer underneath. Changing the trade swaps only the answer. */
 async function CheckBody({ params, searchParams }: Props) {
-  await connection(); // always live: a check is about this minute
   const symbol = (await params).symbol.toUpperCase();
   const { side, usd, chain } = parse(await searchParams);
-  const lists = await Promise.all(
-    CHAINS.map(async (c) => {
-      const assets = await officialAssets(c).catch(() => new Map());
-      return [c, symbolsFor(c).filter((s) => assets.has(s)).map((s) => ({ symbol: s, name: assets.get(s)!.name }))] as const;
-    }),
-  );
-  const symbols = Object.fromEntries(lists) as Record<ChainKey, { symbol: string; name: string }[]>;
+  const symbols = await symbolLists();
 
+  return (
+    <div className="pt-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/#board" className="font-mono text-[11.5px] tracking-[.14em] text-faint uppercase transition-colors hover:text-soft">← Tonight&apos;s board</Link>
+        <p className="label hidden sm:block"><b>Check a trade</b> · change anything and check again</p>
+      </div>
+      <div className="mt-5">
+        <CheckForm key={`${symbol}-${side}-${usd}-${chain}`} symbols={symbols} initial={{ symbol, side, usd, chain }} />
+      </div>
+
+      <Suspense key={`${symbol}-${side}-${usd}-${chain}`} fallback={<CheckLoading issuer={CHAIN[chain].issuer} />}>
+        <Answer symbol={symbol} side={side} usd={usd} chain={chain} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function Answer({ symbol, side, usd, chain }: { symbol: string; side: "buy" | "sell"; usd: number; chain: ChainKey }) {
+  await connection(); // always live: a check is about this minute
   let r: CheckResult | null = null;
   let error: { message: string; fix: string } | null = null;
   try {
@@ -86,14 +99,12 @@ async function CheckBody({ params, searchParams }: Props) {
     const call = r.verdict.call;
     after(() => track("check", { symbol, side, usd, verdict: call }));
   } catch (e) {
-    error = e instanceof CheckError ? { message: e.message, fix: e.fix } : { message: "Robinhood Chain didn't answer in time.", fix: "Refresh the page in a moment." };
+    error = e instanceof CheckError ? { message: e.message, fix: e.fix } : { message: `${CHAIN[chain].label} didn't answer in time.`, fix: "Refresh the page in a moment." };
   }
 
   return (
-    <div className="pt-6">
-      <Link href="/#board" className="inline-flex items-center gap-1 text-sm text-faint transition-colors hover:text-soft">← Tonight&apos;s board</Link>
-
-      <div className="mt-5 flex items-center gap-4">
+    <div id="answer" className="mt-12 scroll-mt-24">
+      <div className="flex items-center gap-4">
         {r && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={r.asset.logo} alt="" className="pop size-12 rounded-full bg-panel-2 sm:size-14" />
@@ -114,10 +125,6 @@ async function CheckBody({ params, searchParams }: Props) {
       )}
 
       {r && <Result r={r} />}
-
-      <h2 className="mt-20 mb-2 font-serif text-3xl">Check another trade</h2>
-      <p className="mb-5 text-sm text-soft">Try a different size or side. Smaller trades often cost far less at night.</p>
-      <CheckForm symbols={symbols} initial={{ symbol, side, usd, chain }} />
     </div>
   );
 }

@@ -2,20 +2,21 @@
 
 import { useEffect, useState } from "react";
 
-const STEPS = [
+const stepsFor = (issuer: string) => [
   "Reading the last real price from Chainlink",
-  "Confirming the official Robinhood token",
+  `Confirming the official ${issuer} token`,
   "Quoting your trade across every venue",
   "Working out what it costs you",
 ];
 
 /** The check takes a couple of seconds; show what's happening instead of a blank skeleton. */
-export function CheckLoading() {
+export function CheckLoading({ issuer = "Robinhood" }: { issuer?: string }) {
+  const STEPS = stepsFor(issuer);
   const [step, setStep] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setStep((s) => Math.min(STEPS.length - 1, s + 1)), 650);
     return () => clearInterval(t);
-  }, []);
+  }, [STEPS.length]);
   return (
     <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]" aria-busy="true" aria-live="polite">
       <div className="panel p-6 sm:p-8">
