@@ -125,7 +125,7 @@ function Result({ r }: { r: CheckResult }) {
     <>
       <section className={`rise mt-8 grid gap-8 overflow-hidden rounded-3xl border p-6 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:gap-10 ${s.ring}`} aria-live="polite">
         <div>
-          <span className={`pop inline-block rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${s.chip}`} style={{ ["--d" as string]: ".15s" }}>{s.label}</span>
+          <span className={`pop inline-block px-2.5 py-1 font-mono text-[11px] font-semibold tracking-[.14em] uppercase ${s.chip}`} style={{ ["--d" as string]: ".15s" }}>{s.label}</span>
           <p className="mt-4 font-serif text-4xl leading-[1.05] sm:text-5xl">{v.title}</p>
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-soft">{v.body}</p>
           {closed && (
@@ -155,7 +155,7 @@ function Result({ r }: { r: CheckResult }) {
 
       <section className="panel rise mt-6 p-5 sm:p-6" style={{ ["--d" as string]: ".1s" }} aria-labelledby="ladder">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="ladder" className="font-medium">Where your price sits</h2>
+          <h2 id="ladder" className="label"><b>Where your price sits</b></h2>
           <p className="text-xs text-faint">
             Last real price from Chainlink · <Ago at={r.last.updatedAt} />
           </p>
@@ -211,7 +211,7 @@ function Routes({ r }: { r: CheckResult }) {
   if (same && r.route)
     return (
       <section className="panel mt-6 p-5 text-sm" aria-labelledby="routes">
-        <h2 id="routes" className="font-medium">Where it fills best</h2>
+        <h2 id="routes" className="label"><b>Where it fills best</b></h2>
         <p className="mt-2 text-soft">
           We checked every venue on Robinhood Chain. The deepest Uniswap v3 pool is already the best route here, at <span className="text-ink tnum">{money(r.route.price)}</span> per share.
         </p>
@@ -226,7 +226,7 @@ function Routes({ r }: { r: CheckResult }) {
   const saving = r.route && r.uniswap ? (buy ? r.usd * (1 / r.route.price - 1 / r.uniswap.price) * r.last.price : (r.route.price - r.uniswap.price) * r.route.tokens) : null;
   return (
     <section className="panel mt-6 p-5 text-sm" aria-labelledby="routes">
-      <h2 id="routes" className="font-medium">Where it fills best</h2>
+      <h2 id="routes" className="label"><b>Where it fills best</b></h2>
       <div className="mt-3 divide-y divide-line">
         {rows.map((x) => (
           <div key={x.name} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3">

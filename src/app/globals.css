@@ -1,23 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --night: #0a0d16;
-  --panel: #111626;
-  --panel-2: #161c2f;
-  --line: #222a40;
-  --ink: #e9ebf3;
-  --soft: #98a1b7;
-  --faint: #636c84;
-  --lamp: #f5b544;
-  --lamp-soft: #f5b5441f;
-  --good: #5fd497;
-  --good-soft: #5fd4971c;
-  --bad: #f2766b;
-  --bad-soft: #f2766b1c;
-  --warn: #f5b544;
-  --warn-soft: #f5b5441c;
-  --cool: #86a8f8;
-  --cool-soft: #86a8f81c;
+  /* Near-black, hairlines, one warm accent (the street lamp) and three status colours. */
+  --night: #09090b;
+  --panel: #0f1013;
+  --panel-2: #15161a;
+  --line: #202228;
+  --line-2: #2c2f37;
+  --ink: #ededf0;
+  --soft: #a1a3ad;
+  --faint: #62656f;
+  --lamp: #ffb547;
+  --lamp-soft: #ffb5471a;
+  --good: #5ee6a8;
+  --good-soft: #5ee6a814;
+  --bad: #ff6b5e;
+  --bad-soft: #ff6b5e14;
+  --warn: #ffcf5c;
+  --warn-soft: #ffcf5c14;
+  --cool: #93a8ff;
+  --cool-soft: #93a8ff14;
 }
 
 @theme inline {
@@ -38,9 +40,19 @@
   --color-warn-soft: var(--warn-soft);
   --color-cool: var(--cool);
   --color-cool-soft: var(--cool-soft);
+  --color-line-2: var(--line-2);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-serif);
+  /* "font-serif" is the display face: a tight grotesk for headlines. */
+  --font-serif: var(--font-inter-tight);
+  --font-display: var(--font-inter-tight);
+  /* Crisp, nearly square corners everywhere except pills and dots. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
 }
 
 html { color-scheme: dark; }
@@ -48,15 +60,30 @@ body {
   background: var(--night);
   color: var(--ink);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+/* A faint drafting grid that fades out down the page, plus one warm glow at the top. */
 body::before {
   content: "";
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(60rem 30rem at 85% -10%, #f5b54414, transparent 60%), radial-gradient(50rem 30rem at -10% 10%, #86a8f810, transparent 60%);
+  background-image: linear-gradient(to right, #ffffff07 1px, transparent 1px), linear-gradient(to bottom, #ffffff07 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 40%, transparent 100%);
+}
+body::after {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; height: 900px; z-index: -1; pointer-events: none;
+  background: radial-gradient(50rem 26rem at 78% -6%, #ffb54714, transparent 65%);
 }
 .tnum { font-variant-numeric: tabular-nums; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 1rem; }
-.field { width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: .75rem; padding: .7rem .9rem; color: var(--ink); outline: none; }
+.font-serif { letter-spacing: -0.03em; font-weight: 600; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+.field { width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 3px; padding: .7rem .9rem; color: var(--ink); outline: none; }
+
+/* Small monospace caps label: "▍ 01 / THE NIGHT PROBLEM". */
+.label { font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--soft); }
+.label b { color: var(--ink); font-weight: 500; }
+.display { font-family: var(--font-inter-tight), var(--font-geist-sans), sans-serif; letter-spacing: -0.035em; line-height: .95; font-weight: 600; }
 .field:focus-visible { border-color: var(--lamp); box-shadow: 0 0 0 3px var(--lamp-soft); }
 a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
 @keyframes pulse-dot { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
@@ -117,3 +144,28 @@ body { overflow-x: clip; }
 .board-filter[data-filter="stock"] tr[data-kind]:not([data-kind="stock"]),
 .board-filter[data-filter="etf"] tr[data-kind]:not([data-kind="etf"]),
 .board-filter[data-filter="commodity"] tr[data-kind]:not([data-kind="commodity"]) { display: none; }
+
+/* ---------- Split-flap board ---------- */
+.flap-board { --cw: 12px; --ch: 19px; --cf: 11px; overflow: hidden; background: linear-gradient(180deg, #111216, #0c0d10); border: 1px solid var(--line-2); box-shadow: 0 40px 120px -40px #000, 0 0 0 1px #00000080 inset; }
+.flap-cell {
+  position: relative; display: grid; place-items: center;
+  width: var(--cw); height: var(--ch);
+  font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: var(--cf); font-weight: 600; line-height: 1;
+  background: linear-gradient(180deg, #1b1d23 0%, #1b1d23 49%, #131418 51%, #131418 100%);
+  border-radius: 2px; box-shadow: 0 1px 0 #00000099, inset 0 1px 0 #ffffff0a;
+}
+.flap-cell::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #00000099; }
+@media (min-width: 640px) { .flap-board { --cw: 16px; --ch: 24px; --cf: 13.5px; } }
+.flap-col { width: calc(var(--n) * (var(--cw) + 3px) - 3px); flex: none; }
+
+/* ---------- Dot field ---------- */
+@keyframes dot-in { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } }
+.dot { animation: dot-in .5s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i) * 4ms); }
+
+/* ---------- Scroll-lit words ---------- */
+@supports (animation-timeline: view()) {
+  .scroll-words { view-timeline-name: --words; }
+  @keyframes word-on { from { color: #3a3c44; } to { color: var(--ink); } }
+  .scroll-words .sw { animation: word-on linear both; animation-timeline: --words; animation-range: cover var(--a) cover var(--b); }
+}
+@media (prefers-reduced-motion: reduce) { .dot, .scroll-words .sw { animation: none !important; } }

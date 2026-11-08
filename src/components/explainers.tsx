@@ -1,46 +1,56 @@
 import Link from "next/link";
 
+/** "▍ 03 / HOW IT WORKS" */
+export function Chapter({ n, children, id }: { n: string; children: React.ReactNode; id?: string }) {
+  return (
+    <p id={id} className="label reveal flex items-center gap-2.5 scroll-mt-28">
+      <span className="h-3 w-[3px] bg-lamp" aria-hidden />
+      <b>{n}</b> <span className="text-faint">/</span> {children}
+    </p>
+  );
+}
+
 const STEPS = [
   {
     n: "01",
-    title: "We read the last real price",
-    body: "Chainlink publishes the actual stock's price onchain. When Wall Street is closed, it holds the last price the real market agreed on. That's the fair yardstick.",
-    icon: (
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>
-    ),
+    big: "1",
+    unit: "real price",
+    title: "Read the last real price",
+    body: "Chainlink publishes the actual stock's price onchain. When Wall Street is closed, it holds the last price the real market agreed on: the fair yardstick.",
   },
   {
     n: "02",
-    title: "We quote your exact trade",
-    body: "Not a market average: your stock, your side, your amount. We ask every venue on Robinhood Chain at once and take the best route, the way a trader actually would.",
-    icon: (
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="5" cy="12" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="19" cy="12" r="2" /><circle cx="19" cy="19" r="2" /><path d="M7 12h10M7 11l10-5M7 13l10 5" /></svg>
-    ),
+    big: "9+",
+    unit: "venues asked",
+    title: "Quote your exact trade",
+    body: "Your asset, your side, your amount. Every venue on Robinhood Chain at once, best route wins, fees and price impact included. Not an average.",
   },
   {
     n: "03",
-    title: "You get one plain call",
-    body: "Trade now, set a limit, split it, or wait for the open, with the dollars at stake. And if you trade, a protected swap won't fill worse than you allow.",
-    icon: (
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /><path d="M9 12l2 2 4-4" /></svg>
-    ),
+    big: "1",
+    unit: "plain call",
+    title: "Get a call, trade protected",
+    body: "Trade now, set a limit, split it, or wait for the open, with the dollars at stake. If you trade, the swap can't fill worse than you allow.",
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how" className="mt-28 scroll-mt-24" aria-labelledby="how-title">
-      <p className="reveal text-sm font-medium tracking-wide text-lamp uppercase">How it works</p>
-      <h2 id="how-title" className="reveal mt-2 max-w-2xl font-serif text-4xl leading-tight sm:text-5xl" style={{ ["--d" as string]: ".05s" }}>
-        Three checks, about two seconds.
+    <section className="mt-36" aria-labelledby="how-title">
+      <Chapter n="03" id="how">How it works</Chapter>
+      <h2 id="how-title" className="display reveal mt-6 max-w-3xl text-5xl sm:text-6xl">
+        Three checks. <span className="text-soft">About two seconds.</span>
       </h2>
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
-        {STEPS.map((s, i) => (
-          <div key={s.n} className="panel card-hover reveal relative overflow-hidden p-6" style={{ ["--d" as string]: `${0.1 + i * 0.12}s` }}>
-            <span className="absolute -top-3 right-4 font-serif text-7xl text-white/[0.04] select-none" aria-hidden>{s.n}</span>
-            <span className="grid size-10 place-items-center rounded-xl bg-lamp-soft text-lamp">{s.icon}</span>
-            <h3 className="mt-5 text-lg font-medium">{s.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-soft">{s.body}</p>
+      <div className="reveal mt-14 grid border-y border-line md:grid-cols-3 md:divide-x md:divide-line">
+        {STEPS.map((s) => (
+          <div key={s.n} className="group relative py-10 md:px-8 md:first:pl-0 md:last:pr-0">
+            <span className="font-mono text-[11px] tracking-[.16em] text-faint">[{s.n}]</span>
+            <p className="mt-8 flex items-baseline gap-3">
+              <span className="display text-7xl text-ink transition-colors group-hover:text-lamp">{s.big}</span>
+              <span className="label">{s.unit}</span>
+            </p>
+            <h3 className="mt-8 text-lg font-medium">{s.title}</h3>
+            <p className="mt-3 text-[15px] leading-relaxed text-soft">{s.body}</p>
           </div>
         ))}
       </div>
@@ -49,22 +59,21 @@ export function HowItWorks() {
 }
 
 const VERDICTS = [
-  { label: "Trade now", tone: "bg-good", body: "Within 0.3% of the last real price, about what any trade costs." },
-  { label: "Set a limit", tone: "bg-warn", body: "A bit off. A limit keeps you from paying more if it moves." },
-  { label: "Split it", tone: "bg-warn", body: "Your own size is moving the price. Smaller pieces cost less." },
-  { label: "Wait for the open", tone: "bg-bad", body: "Wall Street's closed and the gap is wide. It usually closes by the open." },
+  { label: "Trade now", tone: "bg-good", text: "text-good", body: "Within 0.3% of the last real price." },
+  { label: "Set a limit", tone: "bg-warn", text: "text-warn", body: "A little off. Cap what you pay." },
+  { label: "Split it", tone: "bg-warn", text: "text-warn", body: "Your size moves the price." },
+  { label: "Wait for the open", tone: "bg-bad", text: "text-bad", body: "Closed market, wide gap." },
 ];
 
 export function VerdictKey() {
   return (
-    <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {VERDICTS.map((v, i) => (
-        <div key={v.label} className="reveal flex gap-3 rounded-xl border border-line bg-panel/60 p-4" style={{ ["--d" as string]: `${i * 0.08}s` }}>
-          <span className={`mt-1.5 size-2.5 shrink-0 rounded-full ${v.tone}`} aria-hidden />
-          <span>
-            <span className="block text-sm font-medium">{v.label}</span>
-            <span className="mt-0.5 block text-sm text-soft">{v.body}</span>
-          </span>
+    <div className="reveal mt-10 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+      {VERDICTS.map((v) => (
+        <div key={v.label} className="bg-night p-5">
+          <p className={`flex items-center gap-2.5 font-mono text-[11.5px] tracking-[.14em] uppercase ${v.text}`}>
+            <span className={`size-2 ${v.tone}`} aria-hidden /> {v.label}
+          </p>
+          <p className="mt-3 text-sm text-soft">{v.body}</p>
         </div>
       ))}
     </div>
@@ -84,17 +93,23 @@ const FAQ: [string, React.ReactNode][] = [
 
 export function Faq() {
   return (
-    <section id="faq" className="mt-28 scroll-mt-24" aria-labelledby="faq-title">
-      <p className="reveal text-sm font-medium tracking-wide text-lamp uppercase">Questions</p>
-      <h2 id="faq-title" className="reveal mt-2 font-serif text-4xl sm:text-5xl">Good to know</h2>
-      <div className="mt-8 divide-y divide-line rounded-2xl border border-line bg-panel/60">
+    <section className="mt-36 grid gap-12 lg:grid-cols-[1fr_1.6fr]" aria-labelledby="faq-title">
+      <div>
+        <Chapter n="06" id="faq">Questions</Chapter>
+        <h2 id="faq-title" className="display reveal mt-6 text-5xl sm:text-6xl">Good to know.</h2>
+        <p className="reveal mt-5 max-w-xs text-soft">Everything about the numbers, the data and what we don&apos;t collect.</p>
+      </div>
+      <div className="border-t border-line">
         {FAQ.map(([q, a], i) => (
-          <details key={i} className="reveal group px-5 py-1" style={{ ["--d" as string]: `${i * 0.04}s` }}>
-            <summary className="flex items-center justify-between gap-4 py-4 text-left font-medium transition-colors hover:text-lamp">
-              <span>{q}</span>
-              <span className="chev grid size-7 shrink-0 place-items-center rounded-full border border-line text-soft" aria-hidden>+</span>
+          <details key={i} className="group border-b border-line">
+            <summary className="flex items-center justify-between gap-6 py-5 text-left text-[17px] transition-colors hover:text-lamp">
+              <span className="flex items-baseline gap-4">
+                <span className="font-mono text-[11px] tracking-[.14em] text-faint">{String(i + 1).padStart(2, "0")}</span>
+                {q}
+              </span>
+              <span className="chev grid size-7 shrink-0 place-items-center border border-line text-soft" aria-hidden>+</span>
             </summary>
-            <div className="pb-5 text-sm leading-relaxed text-soft">{a}</div>
+            <div className="pb-6 pl-9 text-[15px] leading-relaxed text-soft">{a}</div>
           </details>
         ))}
       </div>
@@ -104,12 +119,18 @@ export function Faq() {
 
 export function FinalCta() {
   return (
-    <section className="reveal relative mt-28 overflow-hidden rounded-3xl border border-line bg-[radial-gradient(60rem_20rem_at_50%_0%,#f5b54422,transparent),var(--panel)] px-6 py-14 text-center">
-      <h2 className="mx-auto max-w-2xl font-serif text-4xl leading-tight sm:text-5xl">Check the trade before you make it.</h2>
-      <p className="mx-auto mt-4 max-w-xl text-soft">Free, no account, two seconds. Works for every tokenized stock, ETF and commodity fund on Robinhood Chain.</p>
-      <Link href="#check" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-lamp px-6 py-3 font-medium text-night transition hover:brightness-110">
-        Check a trade <span aria-hidden>→</span>
-      </Link>
+    <section className="reveal relative mt-36 overflow-hidden border border-line-2 px-6 py-20 text-center">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(40rem_16rem_at_50%_0%,#ffb5471f,transparent_70%)]" aria-hidden />
+      <p className="label relative">Free · no account · two seconds</p>
+      <h2 className="display relative mx-auto mt-6 max-w-3xl text-5xl sm:text-7xl">
+        Check the trade <span className="text-lamp">before</span> you make it.
+      </h2>
+      <div className="relative mt-10 flex justify-center">
+        <Link href="#check" className="group flex items-center border border-line-2 text-[12px] font-medium tracking-[.14em] uppercase transition-colors hover:border-lamp/60">
+          <span className="grid size-12 place-items-center bg-lamp text-night">→</span>
+          <span className="px-5 font-mono">Check a trade</span>
+        </Link>
+      </div>
     </section>
   );
 }

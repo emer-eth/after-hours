@@ -24,7 +24,7 @@ export function BoardFilter({ counts, children }: { counts: Record<string, numbe
             type="button"
             aria-pressed={filter === o.key}
             onClick={() => setFilter(o.key)}
-            className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${filter === o.key ? "border-lamp bg-lamp-soft text-lamp" : "border-line text-soft hover:text-ink"}`}
+            className={`border px-3.5 py-1.5 font-mono text-[11.5px] tracking-[.12em] uppercase transition-colors ${filter === o.key ? "border-lamp/60 bg-lamp-soft text-lamp" : "border-line text-soft hover:text-ink"}`}
           >
             {o.label}
             <span className="ml-1.5 text-xs opacity-70 tnum">{o.key === "all" ? Object.values(counts).reduce((a, b) => a + b, 0) : counts[o.key]}</span>

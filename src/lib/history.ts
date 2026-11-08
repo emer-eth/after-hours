@@ -58,3 +58,10 @@ export async function latestSnapshot(): Promise<SnapshotRow[]> {
   const newest = rows[0].at;
   return rows.filter((r) => r.at === newest);
 }
+
+/** Every $10k sell quote logged while Wall Street was closed in the last `hours` (newest first, up to 1,000). */
+export async function closedQuotes(hours = 48): Promise<{ symbol: string; at: number; cost: number }[]> {
+  type Row = { symbol: string; at: string; sell_cost: number | null };
+  const rows = await rest<Row[]>(`ah_costs?select=symbol,at,sell_cost&session=neq.regular&at=gte.${since(hours)}&sell_cost=not.is.null&order=at.desc&limit=1000`);
+  return (rows || []).map((r) => ({ symbol: r.symbol, at: Date.parse(r.at), cost: r.sell_cost! }));
+}
