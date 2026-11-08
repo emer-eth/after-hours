@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# After Hours
 
-## Getting Started
+**Wall Street is asleep. Its stocks aren't.**
 
-First, run the development server:
+59% of stock-token trading on Robinhood Chain happens outside US market hours, when pools are thin and there's no live market to check against. After Hours checks a stock-token trade before you make it:
+
+- **What it really costs.** Your fill, quoted onchain by Uniswap's QuoterV2, against Chainlink's last real price for the stock. The cost is split into pool drift and your own size.
+- **One plain call.** Trade now, set a limit, split it, wait for the open, or the pool's too thin.
+- **Is it the real token?** Checked against Robinhood's official asset list, because anyone can launch a token called NVDA.
+- **Protected swap.** The worst acceptable fill is set from Chainlink's price, not from the pool's own (possibly drifted) price. If the pool can't meet it, nothing is sent. The check runs without a wallet.
+- **Tonight's board.** Every stock token with a pool: drift, and what $10k costs each way, refreshed every 5 minutes.
+- **History.** A logger samples every token every 10 minutes, so you can see what trading cost over the weekend compared with market hours.
+
+Read-only data needs no keys: Robinhood's public `rhj` API, Chainlink feeds and Uniswap v3 on Robinhood Chain (chain 4663), and DexScreener for pool discovery.
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev                      # http://localhost:3000
+npx tsx scripts/logger.mts       # sample every 10 min into data/log.jsonl
+npx tsx scripts/history.mts      # turn the log into src/data/history.json (ships with the app)
+npx tsx --test tests/*.test.ts   # verdict and market-session tests
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Contracts used (Robinhood Chain)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| | Address |
+|---|---|
+| Uniswap v3 Factory | `0x1f7d7550b1b028f7571e69a784071f0205fd2efa` |
+| QuoterV2 | `0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7` |
+| SwapRouter02 | `0xcaf681a66d020601342297493863e78c959e5cb2` |
+| USDG | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Chainlink feed addresses are in `src/lib/feeds.json`, taken from Chainlink's directory for `robinhood-mainnet`.
 
-## Learn More
+Not financial advice. Stock tokens aren't offered to US persons.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built with Claude Code.

@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --night: #0a0d16;
+  --panel: #111626;
+  --panel-2: #161c2f;
+  --line: #222a40;
+  --ink: #e9ebf3;
+  --soft: #98a1b7;
+  --faint: #636c84;
+  --lamp: #f5b544;
+  --lamp-soft: #f5b5441f;
+  --good: #5fd497;
+  --good-soft: #5fd4971c;
+  --bad: #f2766b;
+  --bad-soft: #f2766b1c;
+  --warn: #f5b544;
+  --warn-soft: #f5b5441c;
+  --cool: #86a8f8;
+  --cool-soft: #86a8f81c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-night: var(--night);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-soft: var(--soft);
+  --color-faint: var(--faint);
+  --color-lamp: var(--lamp);
+  --color-lamp-soft: var(--lamp-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-cool: var(--cool);
+  --color-cool-soft: var(--cool-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-serif);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html { color-scheme: dark; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--night);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(60rem 30rem at 85% -10%, #f5b54414, transparent 60%), radial-gradient(50rem 30rem at -10% 10%, #86a8f810, transparent 60%);
+}
+.tnum { font-variant-numeric: tabular-nums; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 1rem; }
+.field { width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: .75rem; padding: .7rem .9rem; color: var(--ink); outline: none; }
+.field:focus-visible { border-color: var(--lamp); box-shadow: 0 0 0 3px var(--lamp-soft); }
+a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+@keyframes pulse-dot { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+.live-dot { animation: pulse-dot 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
