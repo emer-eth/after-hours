@@ -4,12 +4,12 @@
 
 59% of stock-token trading on Robinhood Chain happens outside US market hours, when pools are thin and there's no live market to check against. After Hours checks a stock-token trade before you make it:
 
-- **What it really costs.** Your fill, quoted onchain by Uniswap's QuoterV2, against Chainlink's last real price for the stock. The cost is split into pool drift and your own size.
+- **What it really costs.** Your fill through the best route across every venue on Robinhood Chain (KyberSwap), next to a single Uniswap v3 pool (QuoterV2), against Chainlink's last real price for the stock. The cost is split into pool drift and your own size.
 - **One plain call.** Trade now, set a limit, split it, wait for the open, or the pool's too thin.
 - **Is it the real token?** Checked against Robinhood's official asset list, because anyone can launch a token called NVDA.
 - **Protected swap.** The worst acceptable fill is set from Chainlink's price, not from the pool's own (possibly drifted) price. If the pool can't meet it, nothing is sent. The check runs without a wallet.
 - **Tonight's board.** Every stock token with a pool: drift, and what $10k costs each way, refreshed every 5 minutes.
-- **History.** A logger samples every token every 10 minutes, so you can see what trading cost over the weekend compared with market hours.
+- **History.** A cloud logger (Supabase cron → `/api/sample`) records every token's best-route cost every 10 minutes, so you can see what trading cost at night and on weekends compared with market hours.
 
 Read-only data needs no keys: Robinhood's public `rhj` API, Chainlink feeds and Uniswap v3 on Robinhood Chain (chain 4663), and DexScreener for pool discovery.
 
@@ -19,7 +19,6 @@ Read-only data needs no keys: Robinhood's public `rhj` API, Chainlink feeds and 
 npm install
 npm run dev                      # http://localhost:3000
 npx tsx scripts/logger.mts       # sample every 10 min into data/log.jsonl
-npx tsx scripts/history.mts      # turn the log into src/data/history.json (ships with the app)
 npx tsx --test tests/*.test.ts   # verdict and market-session tests
 ```
 

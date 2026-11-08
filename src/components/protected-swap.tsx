@@ -1,30 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { createPublicClient, createWalletClient, custom, encodeFunctionData, formatUnits, http, parseAbi, parseUnits, type EIP1193Provider } from "viem";
+import { createPublicClient, createWalletClient, custom, formatUnits, http, parseAbi, parseUnits, type EIP1193Provider } from "viem";
 import { robinhood } from "@/lib/chain";
 
-// Uniswap v3 on Robinhood Chain (developers.uniswap.org, v3 Robinhood Chain deployments).
-const ROUTER = "0xcaf681a66d020601342297493863e78c959e5cb2" as const; // SwapRouter02
-const QUOTER = "0x33e885eD0Ec9bF04EcfB19341582aADCb4c8A9E7" as const; // QuoterV2
+// Swaps through the best route (KyberSwap across every venue), with the worst acceptable fill set from Chainlink's last
+// real price. The router enforces that floor onchain; if the route can't meet it, nothing is built or sent.
+const ROUTER = "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5" as const; // KyberSwap MetaAggregationRouterV2
 const USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168" as const;
 const USDG_DECIMALS = 6;
 
 const erc20 = parseAbi(["function balanceOf(address) view returns (uint256)", "function allowance(address,address) view returns (uint256)", "function approve(address,uint256) returns (bool)"]);
-const router = parseAbi([
-  "function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) payable returns (uint256 amountOut)",
-  "function multicall(uint256 deadline, bytes[] data) payable returns (bytes[] results)",
-]);
-const quoter = parseAbi(["function quoteExactInputSingle((address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96) params) returns (uint256 amountOut, uint160, uint32, uint256)"]);
-
 const reader = createPublicClient({ chain: robinhood, transport: http() });
 const TOLERANCES = [0.003, 0.01, 0.02];
 
-type Props = { symbol: string; token: `0x${string}`; fee: number; side: "buy" | "sell"; usd: number; lastPrice: number };
+type Props = { symbol: string; token: `0x${string}`; side: "buy" | "sell"; usd: number; lastPrice: number };
 type State =
   | { step: "idle" }
   | { step: "working"; note: string }
   | { step: "blocked"; quoted: number; min: number }
+  | { step: "passes"; quoted: number }
   | { step: "done"; hash: string }
   | { step: "error"; message: string };
 
@@ -44,11 +39,7 @@ async function switchToRobinhood(eth: EIP1193Provider) {
   }
 }
 
-/**
- * A swap whose worst acceptable fill is set from Chainlink's last real price, not from the pool's current price.
- * If the pool has drifted, the swap is stopped before it's sent and the money stays in the wallet.
- */
-export function ProtectedSwap({ symbol, token, fee, side, usd, lastPrice: ref }: Props) {
+export function ProtectedSwap({ symbol, token, side, usd, lastPrice: ref }: Props) {
   const [tol, setTol] = useState(TOLERANCES[0]);
   const [state, setState] = useState<State>({ step: "idle" });
   const [account, setAccount] = useState<`0x${string}` | null>(null);
@@ -59,60 +50,60 @@ export function ProtectedSwap({ symbol, token, fee, side, usd, lastPrice: ref }:
   const outDecimals = side === "buy" ? 18 : USDG_DECIMALS;
   const amountIn = side === "buy" ? parseUnits(usd.toFixed(USDG_DECIMALS), USDG_DECIMALS) : parseUnits((usd / ref).toFixed(18), 18);
   // The protection: at worst pay ref × (1 + tol) per share when buying, get ref × (1 − tol) when selling.
-  const minOut = side === "buy" ? parseUnits((usd / (ref * (1 + tol))).toFixed(18), 18) : parseUnits(((usd / ref) * ref * (1 - tol)).toFixed(USDG_DECIMALS), USDG_DECIMALS);
+  const minOut = side === "buy" ? parseUnits((usd / (ref * (1 + tol))).toFixed(18), 18) : parseUnits((usd * (1 - tol)).toFixed(USDG_DECIMALS), USDG_DECIMALS);
   const limitPrice = side === "buy" ? ref * (1 + tol) : ref * (1 - tol);
   const outLabel = side === "buy" ? `${Number(formatUnits(minOut, 18)).toFixed(4)} ${symbol}` : `$${Number(formatUnits(minOut, USDG_DECIMALS)).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  const perShare = (out: bigint) => {
+    const o = Number(formatUnits(out, outDecimals));
+    return side === "buy" ? usd / o : o / (usd / ref);
+  };
 
   async function connect() {
     const eth = wallet();
-    if (!eth) return setState({ step: "error", message: "No browser wallet found. Open this page in a wallet's browser, or install one." });
-    try {
-      const [a] = (await eth.request({ method: "eth_requestAccounts" })) as `0x${string}`[];
-      setAccount(a);
-      setState({ step: "idle" });
-    } catch {
-      setState({ step: "error", message: "The wallet didn't connect." });
-    }
+    if (!eth) return null;
+    const [a] = (await eth.request({ method: "eth_requestAccounts" })) as `0x${string}`[];
+    setAccount(a);
+    return a;
   }
 
-  async function swap() {
+  async function run() {
     try {
-      setState({ step: "working", note: "Checking the pool against the last real price…" });
-      const { result } = await reader.simulateContract({ address: QUOTER, abi: quoter, functionName: "quoteExactInputSingle", args: [{ tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96: BigInt(0) }] });
-      const quotedOut = result[0];
-      if (quotedOut < minOut) {
-        const q = Number(formatUnits(quotedOut, outDecimals));
-        const quoted = side === "buy" ? usd / q : q / (usd / ref);
-        return setState({ step: "blocked", quoted, min: limitPrice });
-      }
+      setState({ step: "working", note: "Finding the best route…" });
+      const qr = await fetch(`/api/route?tokenIn=${tokenIn}&tokenOut=${tokenOut}&amountIn=${amountIn}`);
+      const q = (await qr.json()) as { amountOut?: string; summary?: unknown; error?: string };
+      if (!qr.ok || !q.amountOut) return setState({ step: "error", message: q.error || "No route right now. Try again in a minute." });
+      const quoted = BigInt(q.amountOut);
+      if (quoted < minOut) return setState({ step: "blocked", quoted: perShare(quoted), min: limitPrice });
 
-      // The pool can meet the limit: only now does a wallet come into it.
+      // The route can meet the floor: only now does a wallet come into it.
       const eth = wallet();
-      if (!eth) return setState({ step: "error", message: "The pool can fill within your limit right now. To trade, open this page in a wallet's browser, or install one." });
-      if (!account) {
-        setState({ step: "idle" });
-        return connect();
-      }
+      if (!eth) return setState({ step: "passes", quoted: perShare(quoted) });
+      const who = account ?? (await connect());
+      if (!who) return setState({ step: "passes", quoted: perShare(quoted) });
 
-      const balance = await reader.readContract({ address: tokenIn, abi: erc20, functionName: "balanceOf", args: [account] });
+      const balance = await reader.readContract({ address: tokenIn, abi: erc20, functionName: "balanceOf", args: [who] });
       if (balance < amountIn) return setState({ step: "error", message: `Not enough ${side === "buy" ? "USDG" : symbol}: this needs ${Number(formatUnits(amountIn, inDecimals)).toLocaleString("en-US", { maximumFractionDigits: 4 })}.` });
 
+      setState({ step: "working", note: "Building the protected swap…" });
+      const br = await fetch("/api/route", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ summary: q.summary, sender: who, minOut: minOut.toString() }) });
+      const b = (await br.json()) as { to?: `0x${string}`; data?: `0x${string}`; value?: string; blocked?: boolean; amountOut?: string; error?: string };
+      if (b.blocked) return setState({ step: "blocked", quoted: perShare(BigInt(b.amountOut || "0")), min: limitPrice });
+      if (!br.ok || !b.to || !b.data) return setState({ step: "error", message: b.error || "Couldn't build the swap. Try again." });
+
       await switchToRobinhood(eth);
-      const signer = createWalletClient({ account, chain: robinhood, transport: custom(eth) });
-      const allowance = await reader.readContract({ address: tokenIn, abi: erc20, functionName: "allowance", args: [account, ROUTER] });
+      const signer = createWalletClient({ account: who, chain: robinhood, transport: custom(eth) });
+      const allowance = await reader.readContract({ address: tokenIn, abi: erc20, functionName: "allowance", args: [who, ROUTER] });
       if (allowance < amountIn) {
-        setState({ step: "working", note: `Approve exactly this amount of ${side === "buy" ? "USDG" : symbol} in your wallet…` });
+        setState({ step: "working", note: `Approve exactly this amount of ${side === "buy" ? "USDG" : symbol}…` });
         const h = await signer.writeContract({ address: tokenIn, abi: erc20, functionName: "approve", args: [ROUTER, amountIn] });
         await reader.waitForTransactionReceipt({ hash: h });
       }
 
       setState({ step: "working", note: "Confirm the protected swap in your wallet…" });
-      const call = encodeFunctionData({ abi: router, functionName: "exactInputSingle", args: [{ tokenIn, tokenOut, fee, recipient: account, amountIn, amountOutMinimum: minOut, sqrtPriceLimitX96: BigInt(0) }] });
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
-      const hash = await signer.writeContract({ address: ROUTER, abi: router, functionName: "multicall", args: [deadline, [call]] });
+      const hash = await signer.sendTransaction({ to: ROUTER, data: b.data, value: BigInt(b.value || "0") });
       setState({ step: "working", note: "Waiting for Robinhood Chain…" });
       const receipt = await reader.waitForTransactionReceipt({ hash });
-      setState(receipt.status === "success" ? { step: "done", hash } : { step: "error", message: "The swap reverted onchain, so nothing was traded. The pool probably moved past your limit." });
+      setState(receipt.status === "success" ? { step: "done", hash } : { step: "error", message: "The swap reverted onchain, so nothing was traded. The price moved past your floor." });
     } catch (e) {
       const msg = (e as { shortMessage?: string; message?: string }).shortMessage || (e as Error).message || "";
       setState({ step: "error", message: /reject|denied/i.test(msg) ? "You cancelled it in your wallet. Nothing was sent." : msg.slice(0, 180) });
@@ -124,10 +115,10 @@ export function ProtectedSwap({ symbol, token, fee, side, usd, lastPrice: ref }:
     <section className="panel mt-6 p-5 sm:p-6" aria-labelledby="pswap">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="pswap" className="font-serif text-2xl">Protected {side}</h2>
-        <span className="text-xs text-faint">Onchain · Uniswap v3 on Robinhood Chain</span>
+        <span className="text-xs text-faint">Onchain · best route on Robinhood Chain</span>
       </div>
       <p className="mt-2 max-w-2xl text-sm text-soft">
-        A normal swap only protects you against the pool&apos;s own price, which may already have drifted. This one sets your worst fill from Chainlink&apos;s last real price. If the pool can&apos;t meet it, nothing is sent.
+        A normal swap only protects you against the market&apos;s current price, which may already have drifted. This one sets your worst fill from Chainlink&apos;s last real price, and the router enforces it. If the market can&apos;t meet it, nothing is sent.
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
@@ -145,20 +136,25 @@ export function ProtectedSwap({ symbol, token, fee, side, usd, lastPrice: ref }:
       </p>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <button type="button" onClick={swap} disabled={busy} className="rounded-xl bg-ink px-5 py-2.5 font-medium text-night transition hover:brightness-95 disabled:opacity-50">
+        <button type="button" onClick={run} disabled={busy} className="rounded-xl bg-ink px-5 py-2.5 font-medium text-night transition hover:brightness-95 disabled:opacity-50">
           {busy ? state.note : `Protected ${side} · $${usd.toLocaleString("en-US")}`}
         </button>
-        {account ? <span className="font-mono text-xs text-faint">{account.slice(0, 6)}…{account.slice(-4)}</span> : <span className="text-xs text-faint">Checks the pool first. A wallet is only needed if it passes.</span>}
+        {account ? <span className="font-mono text-xs text-faint">{account.slice(0, 6)}…{account.slice(-4)}</span> : <span className="text-xs text-faint">Checks the market first. A wallet is only needed if it passes.</span>}
       </div>
 
       {state.step === "blocked" && (
         <p className="mt-4 rounded-xl border border-bad/40 bg-bad-soft p-4 text-sm" role="status">
-          <b className="font-medium">Stopped. Nothing was sent.</b> The pool would {side === "buy" ? "charge" : "pay"} ${state.quoted.toFixed(2)} per share, past your limit of ${state.min.toFixed(2)}. Wait for the open, allow more, or trade less.
+          <b className="font-medium">Stopped. Nothing was sent.</b> Even the best route would {side === "buy" ? "charge" : "pay"} ${state.quoted.toFixed(2)} per share, past your floor of ${state.min.toFixed(2)}. Wait for the open, allow more, or trade less.
+        </p>
+      )}
+      {state.step === "passes" && (
+        <p className="mt-4 rounded-xl border border-good/40 bg-good-soft p-4 text-sm" role="status">
+          <b className="font-medium">It passes.</b> The best route fills at ${state.quoted.toFixed(2)} per share, inside your floor. Open this page in a wallet&apos;s browser to trade.
         </p>
       )}
       {state.step === "done" && (
         <p className="mt-4 rounded-xl border border-good/40 bg-good-soft p-4 text-sm" role="status">
-          Done, within your limit.{" "}
+          Done, within your floor.{" "}
           <a className="underline underline-offset-4" href={`${robinhood.blockExplorers.default.url}/tx/${state.hash}`} target="_blank" rel="noreferrer">
             See it on Blockscout
           </a>

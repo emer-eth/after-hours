@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife } from "next/cache";
-import { chainlink, officialAssets, poolsFor, quote, SYMBOLS } from "./market";
+import { chainlink, fills, officialAssets, poolsFor, SYMBOLS } from "./market";
 
 export type BoardRow = {
   symbol: string;
@@ -37,11 +37,12 @@ export async function board(): Promise<BoardRow[]> {
     try {
       const a = assets.get(symbol);
       if (!a) return null;
-      const [cl, pools] = await Promise.all([chainlink(symbol), poolsFor(a.address)]);
-      if (!cl.close || !pools.length) return null;
+      const [cl, pools] = await Promise.all([chainlink(symbol), poolsFor(a.address).catch(() => [])]);
+      if (!cl.close) return null;
       const ref = cl.close.price;
-      const [b, s] = await Promise.all([quote(a.address, "buy", 10_000, ref, pools), quote(a.address, "sell", 10_000, ref, pools)]);
-      if (!b || !s) return null;
+      const [fb, fs] = await Promise.all([fills(a.address, "buy", 10_000, ref, pools), fills(a.address, "sell", 10_000, ref, pools)]);
+      if (!fb || !fs) return null;
+      const b = fb.best, s = fs.best;
       return {
         symbol,
         name: a.name,

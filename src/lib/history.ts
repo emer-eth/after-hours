@@ -1,7 +1,5 @@
 import "server-only";
-import STATIC from "@/data/history.json";
-
-// History from the cloud logger (Supabase, read with the public anon key), falling back to the snapshot bundled at deploy.
+// History from the cloud logger (Supabase, read with the public anon key).
 
 export type Point = { t: number; s: string; buy: number | null; sell: number | null }; // s = session initial
 export type Worst = { symbol: string; side: "buy" | "sell"; cost: number; at: number; liq: number };
@@ -26,9 +24,7 @@ const since = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOS
 export async function historyFor(symbol: string): Promise<Point[]> {
   type Row = { at: string; session: string; buy_cost: number | null; sell_cost: number | null };
   const rows = await rest<Row[]>(`ah_costs?select=at,session,buy_cost,sell_cost&symbol=eq.${encodeURIComponent(symbol)}&at=gte.${since(24 * 7)}&order=at.asc&limit=1100`);
-  if (rows?.length) return rows.map((r) => ({ t: Date.parse(r.at), s: r.session[0], buy: r.buy_cost, sell: r.sell_cost }));
-  const fallback = (STATIC as unknown as { series: Record<string, [number, string, number | null, number | null][]> }).series[symbol] || [];
-  return fallback.map(([t, s, buy, sell]) => ({ t, s, buy, sell }));
+  return (rows || []).map((r) => ({ t: Date.parse(r.at), s: r.session[0], buy: r.buy_cost, sell: r.sell_cost }));
 }
 
 /** The costliest $10k trades while Wall Street was closed in the last 36 hours, one per token, thin pools left out. */

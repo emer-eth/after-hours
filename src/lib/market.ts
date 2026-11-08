@@ -1,6 +1,7 @@
 import { formatUnits, parseUnits, getAddress } from "viem";
 import { client, feedAbi, poolAbi, quoterAbi, QUOTER_V2, USDG, USDG_DECIMALS, V3_FACTORY } from "./chain";
 import FEEDS from "./feeds.json";
+import { bestRoute } from "./aggregator";
 
 export type Asset = { symbol: string; name: string; address: `0x${string}`; logo: string; active: boolean; overnight: boolean };
 export type Feed = { price: number; updatedAt: number } | null;
@@ -125,4 +126,29 @@ export async function quote(token: `0x${string}`, side: "buy" | "sell", usd: num
   const ok = fills.filter((f): f is Fill => !!f);
   if (!ok.length) return null;
   return ok.reduce((best, f) => (side === "buy" ? (f.price < best.price ? f : best) : f.price > best.price ? f : best));
+}
+
+export type Fills = {
+  best: { price: number; tokens: number; usd: number; source: "route" | "uniswap" };
+  uniswap: Fill | null;
+  route: { price: number; tokens: number; usd: number; venues: string[] } | null;
+};
+
+/** Uniswap v3 alone and the best route across all venues, side by side; `best` is whichever fills better. */
+export async function fills(token: `0x${string}`, side: "buy" | "sell", usd: number, refPrice: number, pools: Pool[]): Promise<Fills | null> {
+  const amountIn = side === "buy" ? parseUnits(usd.toFixed(USDG_DECIMALS), USDG_DECIMALS) : parseUnits((usd / refPrice).toFixed(18), 18);
+  const [uni, r] = await Promise.all([
+    pools.length ? quote(token, side, usd, refPrice, pools) : Promise.resolve(null),
+    bestRoute(side === "buy" ? USDG : token, side === "buy" ? token : USDG, amountIn),
+  ]);
+  let route: Fills["route"] = null;
+  if (r) {
+    const out = Number(formatUnits(r.amountOut, side === "buy" ? 18 : USDG_DECIMALS));
+    const tokens = side === "buy" ? out : usd / refPrice;
+    const dollars = side === "buy" ? usd : out;
+    route = { price: dollars / tokens, tokens, usd: dollars, venues: r.venues };
+  }
+  const better = (a: number, b: number) => (side === "buy" ? a < b : a > b);
+  const pick = route && (!uni || better(route.price, uni.price)) ? { ...route, source: "route" as const } : uni ? { price: uni.price, tokens: uni.tokens, usd: uni.usd, source: "uniswap" as const } : null;
+  return pick ? { best: pick, uniswap: uni, route } : null;
 }

@@ -24,7 +24,7 @@ export async function NightPanel() {
   return (
     <section className="mt-14" aria-labelledby="slept">
       <h2 id="slept" className="font-serif text-3xl">While Wall Street slept</h2>
-      <p className="mt-2 max-w-2xl text-sm text-soft">Logged onchain every 10 minutes, around the clock. Pools too thin to trade are left out.</p>
+      <p className="mt-2 max-w-2xl text-sm text-soft">Logged onchain every 10 minutes, around the clock, at the best route available. Trades costing 20% or more are left out.</p>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
         {worst.length > 0 && (

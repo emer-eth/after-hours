@@ -120,7 +120,7 @@ function Result({ r }: { r: CheckResult }) {
 
       <section className="mt-6 grid gap-4 sm:grid-cols-3" aria-label="The numbers">
         <Stat label="Last real price" value={money(r.last.price)} note={<>Chainlink · <Ago at={r.last.updatedAt} /></>} />
-        <Stat label={`You'd ${verb} per share`} value={money(r.fill.price)} note={`${r.fill.tokens.toLocaleString("en-US", { maximumFractionDigits: 4 })} ${r.asset.symbol} for ${usdFmt(r.fill.usd)}`} />
+        <Stat label={`You'd ${verb} per share`} value={money(r.best.price)} note={`${r.best.tokens.toLocaleString("en-US", { maximumFractionDigits: 4 })} ${r.asset.symbol} for ${usdFmt(r.best.usd)} · best route`} />
         <Stat
           label={v.costPct >= 0 ? "What this costs you" : "What you gain"}
           value={`${usdFmt(Math.abs(v.costUsd))}`}
@@ -130,7 +130,7 @@ function Result({ r }: { r: CheckResult }) {
       </section>
 
       <section className="panel mt-6 divide-y divide-line text-sm" aria-label="Where the cost comes from">
-        <Row k="The pool's price vs the last real price" v={`${v.driftPct >= 0 ? "" : "−"}${pct(Math.abs(v.driftPct))} ${v.driftPct >= 0 ? "against you" : "in your favour"}`} />
+        <Row k="The onchain price vs the last real price" v={`${v.driftPct >= 0 ? "" : "−"}${pct(Math.abs(v.driftPct))} ${v.driftPct >= 0 ? "against you" : "in your favour"}`} />
         <Row k="Your trade size moving the price" v={pct(v.impactPct)} />
         <Row k={r.side === "buy" ? "Protective limit: don't pay more than" : "Protective limit: don't sell for less than"} v={money(v.limit)} />
         {r.h24 && <Row k="Chainlink's 24/7 estimate" v={<>{money(r.h24.price)} <span className="text-faint">· <Ago at={r.h24.updatedAt} /></span></>} />}
@@ -138,7 +138,9 @@ function Result({ r }: { r: CheckResult }) {
         <Row k="Session" v={SESSION_LABEL[r.session]} />
       </section>
 
-      {v.call !== "thin" && <ProtectedSwap symbol={r.asset.symbol} token={r.asset.address} fee={r.fill.fee} side={r.side} usd={r.usd} lastPrice={r.last.price} />}
+      <Routes r={r} />
+
+      {v.call !== "thin" && <ProtectedSwap symbol={r.asset.symbol} token={r.asset.address} side={r.side} usd={r.usd} lastPrice={r.last.price} />}
 
       <section className="panel mt-6 p-5 text-sm" aria-label="Is this the real token?">
         <p className="flex items-center gap-2 font-medium">
@@ -152,17 +154,43 @@ function Result({ r }: { r: CheckResult }) {
           </a>
           , from Robinhood&apos;s own asset list. Anyone can launch a token called {r.asset.symbol}; only this address is the real one.
         </p>
-        <p className="mt-2 text-faint">
-          Quoted onchain against Uniswap v3 pool{" "}
-          <a className="font-mono underline underline-offset-4 hover:text-soft" href={`https://robinhoodchain.blockscout.com/address/${r.fill.pool}`} target="_blank" rel="noreferrer">
-            {short(r.fill.pool)}
-          </a>{" "}
-          ({r.fill.fee / 10_000}% fee, best of {r.pools.length}). Aggregators may route a little better.
-        </p>
       </section>
 
       <History symbol={r.asset.symbol} side={r.side} />
     </>
+  );
+}
+
+function Routes({ r }: { r: CheckResult }) {
+  const buy = r.side === "buy";
+  const rows = [
+    r.route && { name: "Best route", detail: `KyberSwap across ${r.route.venues.length} venue${r.route.venues.length === 1 ? "" : "s"}: ${r.route.venues.slice(0, 5).join(", ")}${r.route.venues.length > 5 ? "…" : ""}`, price: r.route.price, usd: r.route.usd, tokens: r.route.tokens },
+    r.uniswap && { name: "One Uniswap v3 pool", detail: `${short(r.uniswap.pool)} · ${r.uniswap.fee / 10_000}% fee`, price: r.uniswap.price, usd: r.uniswap.usd, tokens: r.uniswap.tokens, href: `https://robinhoodchain.blockscout.com/address/${r.uniswap.pool}` },
+  ].filter((x): x is NonNullable<typeof x> => !!x);
+  if (!rows.length) return null;
+  // What the better venue saves against the other, in dollars of this trade.
+  const saving = r.route && r.uniswap ? (buy ? r.usd * (1 / r.route.price - 1 / r.uniswap.price) * r.last.price : (r.route.price - r.uniswap.price) * r.route.tokens) : null;
+  return (
+    <section className="panel mt-6 p-5 text-sm" aria-labelledby="routes">
+      <h2 id="routes" className="font-medium">Where it fills best</h2>
+      <div className="mt-3 divide-y divide-line">
+        {rows.map((x) => (
+          <div key={x.name} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3">
+            <span>
+              <span className="text-ink">{x.name}</span>
+              {x.price === r.best.price && <span className="ml-2 rounded-full bg-good-soft px-2 py-0.5 text-xs text-good">used</span>}
+              <span className="block text-xs text-faint">{"href" in x && x.href ? <a className="font-mono underline underline-offset-4 hover:text-soft" href={x.href} target="_blank" rel="noreferrer">{x.detail}</a> : x.detail}</span>
+            </span>
+            <span className="tnum">{money(x.price)} <span className="text-faint">per share</span></span>
+          </div>
+        ))}
+      </div>
+      {saving !== null && Math.abs(saving) >= 1 && (
+        <p className="mt-2 text-soft">
+          {saving > 0 ? `The best route ${buy ? "saves" : "gets you"} ${usdFmt(saving)} ${buy ? "" : "more "}versus the single pool.` : `The single pool is ${usdFmt(-saving)} better right now.`}
+        </p>
+      )}
+    </section>
   );
 }
 
