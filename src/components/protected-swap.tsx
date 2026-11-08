@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPublicClient, createWalletClient, custom, formatUnits, http, parseAbi, parseUnits, type EIP1193Provider } from "viem";
 import { robinhood } from "@/lib/chain";
+import { track } from "@/lib/track";
 
 // Swaps through the best route (KyberSwap across every venue), with the worst acceptable fill set from Chainlink's last
 // real price. The router enforces that floor onchain; if the route can't meet it, nothing is built or sent.
@@ -73,7 +74,11 @@ export function ProtectedSwap({ symbol, token, side, usd, lastPrice: ref }: Prop
       const q = (await qr.json()) as { amountOut?: string; summary?: unknown; error?: string };
       if (!qr.ok || !q.amountOut) return setState({ step: "error", message: q.error || "No route right now. Try again in a minute." });
       const quoted = BigInt(q.amountOut);
-      if (quoted < minOut) return setState({ step: "blocked", quoted: perShare(quoted), min: limitPrice });
+      if (quoted < minOut) {
+        void track("protect_blocked", { symbol, side, usd });
+        return setState({ step: "blocked", quoted: perShare(quoted), min: limitPrice });
+      }
+      void track("protect_passed", { symbol, side, usd });
 
       // The route can meet the floor: only now does a wallet come into it.
       const eth = wallet();
@@ -103,6 +108,7 @@ export function ProtectedSwap({ symbol, token, side, usd, lastPrice: ref }: Prop
       const hash = await signer.sendTransaction({ to: ROUTER, data: b.data, value: BigInt(b.value || "0") });
       setState({ step: "working", note: "Waiting for Robinhood Chain…" });
       const receipt = await reader.waitForTransactionReceipt({ hash });
+      if (receipt.status === "success") void track("swap", { symbol, side, usd });
       setState(receipt.status === "success" ? { step: "done", hash } : { step: "error", message: "The swap reverted onchain, so nothing was traded. The price moved past your floor." });
     } catch (e) {
       const msg = (e as { shortMessage?: string; message?: string }).shortMessage || (e as Error).message || "";

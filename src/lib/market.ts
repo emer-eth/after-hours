@@ -135,11 +135,11 @@ export type Fills = {
 };
 
 /** Uniswap v3 alone and the best route across all venues, side by side; `best` is whichever fills better. */
-export async function fills(token: `0x${string}`, side: "buy" | "sell", usd: number, refPrice: number, pools: Pool[]): Promise<Fills | null> {
+export async function fills(token: `0x${string}`, side: "buy" | "sell", usd: number, refPrice: number, pools: Pool[], useRoute = true): Promise<Fills | null> {
   const amountIn = side === "buy" ? parseUnits(usd.toFixed(USDG_DECIMALS), USDG_DECIMALS) : parseUnits((usd / refPrice).toFixed(18), 18);
   const [uni, r] = await Promise.all([
     pools.length ? quote(token, side, usd, refPrice, pools) : Promise.resolve(null),
-    bestRoute(side === "buy" ? USDG : token, side === "buy" ? token : USDG, amountIn),
+    useRoute ? bestRoute(side === "buy" ? USDG : token, side === "buy" ? token : USDG, amountIn) : Promise.resolve(null),
   ]);
   let route: Fills["route"] = null;
   if (r) {

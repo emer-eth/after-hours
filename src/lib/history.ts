@@ -48,3 +48,13 @@ export async function sessionCosts(): Promise<SessionCost[]> {
   const rows = await rest<Row[]>("rpc/ah_session_costs", { method: "POST", body: JSON.stringify({ days: 7 }) });
   return (rows || []).map((r) => ({ session: r.session, samples: Number(r.samples), buy: r.buy_cost, sell: r.sell_cost }));
 }
+
+export type SnapshotRow = { at: string; symbol: string; ref: number; ref_at: string; liq: number; buy10k: number | null; sell10k: number | null };
+
+/** The logger's most recent snapshot (every token, one moment), if it's under 25 minutes old. */
+export async function latestSnapshot(): Promise<SnapshotRow[]> {
+  const rows = await rest<SnapshotRow[]>(`ah_samples?select=at,symbol,ref,ref_at,liq,buy10k,sell10k&at=gte.${since(25 / 60)}&order=at.desc&limit=80`);
+  if (!rows?.length) return [];
+  const newest = rows[0].at;
+  return rows.filter((r) => r.at === newest);
+}

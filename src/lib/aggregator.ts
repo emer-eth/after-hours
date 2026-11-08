@@ -14,14 +14,37 @@ const NAMES: Record<string, string> = {
 };
 const pretty = (x: string) => NAMES[x] ?? x.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).replace(/^Pmm \d+$/, "Market maker");
 
+// KyberSwap's free API blocks bursts (429 after ~18 quick calls) but is happy with about one call a second.
+// So calls from this server queue up at least GAP ms apart, and a 429 waits and tries again.
+const GAP = 600;
+let nextSlot = 0;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+async function slot() {
+  const now = Date.now();
+  const at = Math.max(now, nextSlot);
+  nextSlot = at + GAP;
+  if (at > now) await sleep(at - now);
+}
+
 /** The best route for swapping `amountIn` of `tokenIn` into `tokenOut`, or null if there's none. */
 export async function bestRoute(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<Route | null> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await tryRoute(tokenIn, tokenOut, amountIn);
+    if (r !== "retry") return r;
+    await sleep(1500 * (attempt + 1));
+  }
+  return null;
+}
+
+async function tryRoute(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<Route | null | "retry"> {
+  await slot();
   try {
     const r = await fetch(`${KYBER_API}/routes?tokenIn=${tokenIn}&tokenOut=${tokenOut}&amountIn=${amountIn}`, {
       headers: { "x-client-id": CLIENT_ID, accept: "application/json" },
       cache: "no-store",
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(10_000),
     });
+    if (r.status === 429 || r.status >= 500) return "retry";
     if (!r.ok) return null;
     const d = (await r.json()) as { code: number; data?: { routeSummary?: RouteSummary } };
     const s = d.data?.routeSummary;
@@ -29,6 +52,6 @@ export async function bestRoute(tokenIn: string, tokenOut: string, amountIn: big
     const venues = [...new Set((s.route || []).flat().map((h) => pretty(h.exchange)))];
     return { amountOut: BigInt(s.amountOut), venues, summary: s };
   } catch {
-    return null;
+    return "retry"; // timeout or network error
   }
 }

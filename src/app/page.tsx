@@ -5,6 +5,7 @@ import { pct } from "@/lib/verdict";
 import { CheckForm } from "@/components/check-form";
 import { Ago } from "@/components/ago";
 import { NightPanel } from "@/components/night-panel";
+import { Stats } from "@/components/stats";
 
 const tone = (x: number) => (x >= 0.2 ? "text-bad font-medium" : x >= 0.0075 ? "text-bad" : x >= 0.003 ? "text-warn" : "text-soft");
 const signed = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${pct(Math.abs(x))}`;
@@ -24,6 +25,9 @@ export default function Home() {
       </section>
       <Suspense fallback={<BoardLoading />}>
         <Live />
+      </Suspense>
+      <Suspense fallback={null}>
+        <Stats />
       </Suspense>
       <Suspense fallback={null}>
         <NightPanel />
@@ -65,10 +69,10 @@ async function Live() {
       <section className="mt-14" aria-labelledby="board">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <h2 id="board" className="font-serif text-3xl">Tonight&apos;s board</h2>
-          <p className="text-sm text-faint">Live from Robinhood Chain · refreshes every 5 minutes</p>
+          <p className="text-sm text-faint">Best route on Robinhood Chain · updated every 10 minutes</p>
         </div>
         <p className="mt-2 max-w-2xl text-sm text-soft">
-          <b className="font-medium text-ink">Last real price</b> is Chainlink&apos;s feed of the actual stock. <b className="font-medium text-ink">Pool drift</b> is where the token trades onchain against it. The cost columns are what a $10k trade loses to drift and slippage together.
+          <b className="font-medium text-ink">Last real price</b> is Chainlink&apos;s feed of the actual stock. <b className="font-medium text-ink">Pool drift</b> is where the token trades onchain against it. The cost columns are what a $10k trade loses to drift and slippage together, through the best route across every venue.
         </p>
 
         {rows.length === 0 ? (

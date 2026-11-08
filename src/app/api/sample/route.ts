@@ -3,7 +3,7 @@ import { sampleAll } from "@/lib/sample";
 
 // A snapshot of every stock token, as public JSON. Supabase's scheduler fetches this every 10 minutes and stores it.
 // It only reads public onchain and API data, so it needs no secret.
-export const maxDuration = 120;
+export const maxDuration = 300; // a snapshot paces aggregator calls, so it takes a minute or two
 
 export async function GET() {
   await connection();

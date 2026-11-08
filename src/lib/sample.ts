@@ -1,5 +1,5 @@
 // One snapshot of every stock token: Chainlink's last real price and 24/7 price, and what $1k/$10k/$50k buys and sells fill at
-// through the best route (from 2026-11-08 07:30 UTC; earlier rows quoted the deepest Uniswap v3 pool only).
+// ($10k through the best route; $1k and $50k through the deepest Uniswap v3 pool).
 // Used by the local logger (scripts/logger.mts) and by /api/sample, which Supabase's scheduler calls every 10 minutes.
 import { chainlink, fills, officialAssets, poolsFor, SYMBOLS } from "./market";
 import { sessionAt } from "./session";
@@ -43,7 +43,9 @@ async function sampleOne(symbol: string, at: string, session: string): Promise<S
   if (!cl.close) return null;
   const ref = cl.close.price;
   // The best available fill (best route across all venues, or the Uniswap pool if that's better).
-  const all = await Promise.all(SIZES.flatMap((usd) => [fills(asset.address, "buy", usd, ref, pools), fills(asset.address, "sell", usd, ref, pools)]));
+  // $10k (the size the app shows) goes through the best route; $1k and $50k use the Uniswap pool, to stay within the
+  // aggregator's free rate limit.
+  const all = await Promise.all(SIZES.flatMap((usd) => [fills(asset.address, "buy", usd, ref, pools, usd === 10_000), fills(asset.address, "sell", usd, ref, pools, usd === 10_000)]));
   if (all.every((f) => !f)) return null;
   const [buy1k, sell1k, buy10k, sell10k, buy50k, sell50k] = all.map((f) => f?.best.price ?? null);
   return {
@@ -62,6 +64,6 @@ async function sampleOne(symbol: string, at: string, session: string): Promise<S
 export async function sampleAll(now = new Date()): Promise<SampleRow[]> {
   const at = now.toISOString();
   const session = sessionAt(now);
-  const rows = await mapLimit(SYMBOLS, 6, (s) => sampleOne(s, at, session).catch(() => null));
+  const rows = await mapLimit(SYMBOLS, 5, (s) => sampleOne(s, at, session).catch(() => null));
   return rows.filter((r): r is SampleRow => !!r);
 }

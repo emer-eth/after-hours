@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { SessionPill } from "@/components/session-pill";
 import "./globals.css";
 
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             Read-only and free. It shows costs, not advice: overnight news can move any stock before the open. Prices from Chainlink and Robinhood, fills quoted onchain by Uniswap on Robinhood Chain, pools found with DexScreener.
           </p>
         </footer>
+        <Analytics />
       </body>
     </html>
   );

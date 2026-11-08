@@ -87,5 +87,5 @@ revoke all on function public.ah_ingest() from public, anon, authenticated;
 -- Schedules (re-running this file replaces them).
 select cron.unschedule(jobid) from cron.job where jobname in ('ah-sample', 'ah-ingest');
 select cron.schedule('ah-sample', '*/10 * * * *',
-  $$insert into public.ah_requests (id) select net.http_get(url := 'https://after-hours-rouge.vercel.app/api/sample', timeout_milliseconds := 110000)$$);
+  $$insert into public.ah_requests (id) select net.http_get(url := 'https://after-hours-rouge.vercel.app/api/sample', timeout_milliseconds := 280000)$$);
 select cron.schedule('ah-ingest', '3-59/10 * * * *', $$select public.ah_ingest()$$);

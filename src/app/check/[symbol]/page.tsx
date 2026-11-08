@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { connection } from "next/server";
+import { after, connection } from "next/server";
+import { track } from "@/lib/track";
 import { checkTrade, CheckError, type CheckResult } from "@/lib/check";
 import { officialAssets, SYMBOLS } from "@/lib/market";
 import { SESSION_LABEL } from "@/lib/session";
@@ -72,6 +73,8 @@ async function CheckBody({ params, searchParams }: Props) {
   let error: { message: string; fix: string } | null = null;
   try {
     r = await checkTrade(symbol, side, usd);
+    const call = r.verdict.call;
+    after(() => track("check", { symbol, side, usd, verdict: call }));
   } catch (e) {
     error = e instanceof CheckError ? { message: e.message, fix: e.fix } : { message: "Robinhood Chain didn't answer in time.", fix: "Refresh the page in a moment." };
   }
