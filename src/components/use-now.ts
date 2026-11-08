@@ -1,15 +1,18 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 
 const TICK = 30_000;
-const subscribe = (cb: () => void) => {
-  const t = setInterval(cb, TICK);
-  return () => clearInterval(t);
-};
 
-/** The current time, rounded to 30 seconds so it stays stable between ticks; null while server rendering. */
+/** The current time, refreshed every 30 seconds; null until the component has mounted, so server and browser HTML match. */
 export function useNow(): Date | null {
-  const ms = useSyncExternalStore(subscribe, () => Math.floor(Date.now() / TICK) * TICK, () => null);
-  return ms === null ? null : new Date(ms);
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    // Setting state on mount is the point here: the server can't know the viewer's clock.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), TICK);
+    return () => clearInterval(t);
+  }, []);
+  return now;
 }
