@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const LINKS = [
@@ -14,11 +13,10 @@ const LINKS = [
 
 /** Section links with index numbers; on the home page the section you're reading lights up. */
 export function NavLinks() {
-  const path = usePathname();
   const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => {
-    if (path !== "/") return;
+    if (window.location.pathname !== "/") return; // scroll-spy only on the home page
     let raf = 0;
     const update = () => {
       raf = 0;
@@ -39,7 +37,7 @@ export function NavLinks() {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [path]);
+  }, []);
 
   return (
     <nav className="hidden items-center md:flex" aria-label="Sections">
