@@ -4,6 +4,8 @@ import { Geist, Geist_Mono, Inter_Tight } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SessionPill } from "@/components/session-pill";
 import { SmoothScroll } from "@/components/ui/smooth-scroll";
+import { LogoMark, Wordmark } from "@/components/brand";
+import { NavLinks } from "@/components/nav-links";
 import "./globals.css";
 
 const sans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -23,33 +25,16 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#09090b" };
 
-function Mark({ className = "size-4" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M20.3 14.6A8.5 8.5 0 0 1 9.4 3.7a8.5 8.5 0 1 0 10.9 10.9Z" />
-    </svg>
-  );
-}
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable} h-full antialiased`}>
       <body className="relative flex min-h-full flex-col">
         <header className="sticky top-0 z-30 border-b border-line/70 bg-night/70 backdrop-blur-md">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
-            <Link href="/" className="flex items-center gap-2.5 font-display text-[15px] font-semibold tracking-tight">
-              <span className="grid size-7 place-items-center border border-lamp/30 bg-lamp-soft text-lamp">
-                <Mark className="size-3.5" />
-              </span>
-              After Hours
+            <Link href="/" aria-label="After Hours, home">
+              <Wordmark />
             </Link>
-            <nav className="hidden items-center gap-7 text-[13.5px] text-soft md:flex" aria-label="Sections">
-              <Link href="/#problem" className="transition-colors hover:text-ink">Why</Link>
-              <Link href="/#how" className="transition-colors hover:text-ink">How it works</Link>
-              <Link href="/#board" className="transition-colors hover:text-ink">Board</Link>
-              <Link href="/#api" className="transition-colors hover:text-ink">API</Link>
-              <Link href="/#faq" className="transition-colors hover:text-ink">FAQ</Link>
-            </nav>
+            <NavLinks />
             <div className="flex items-center gap-2">
               <span className="hidden lg:block"><SessionPill /></span>
               <Link href="/#check" className="group flex items-center border border-line-2 text-[12px] font-medium tracking-[.14em] text-ink uppercase transition-colors hover:border-lamp/60">
@@ -63,8 +48,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="border-t border-line">
           <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 text-sm sm:grid-cols-[1.6fr_1fr_1fr] sm:px-6">
             <div>
-              <p className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-ink">
-                <Mark className="size-4 text-lamp" /> After Hours
+              <p className="flex items-center gap-3 font-display text-lg font-semibold tracking-tight text-ink">
+                <LogoMark size={28} /> After Hours
               </p>
               <p className="mt-4 max-w-sm leading-relaxed text-faint">Check a stock-token trade before you make it. It shows costs, not advice: overnight news can move any stock before the open. Stock tokens aren&apos;t offered to US persons.</p>
             </div>
