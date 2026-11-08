@@ -1,14 +1,11 @@
-import HISTORY from "@/data/history.json";
+import { historyFor } from "@/lib/history";
 import { pct } from "@/lib/verdict";
-
-type Point = [number, string, number | null, number | null]; // time, session initial, buy cost, sell cost
-const data = HISTORY as unknown as { generatedAt: string; series: Record<string, Point[]> };
 
 const W = 720, H = 180, PAD = { l: 44, r: 12, t: 12, b: 26 };
 
 /** What a $10k trade on this side cost against the last real price, sample by sample, with Wall Street's open hours shaded. */
-export function History({ symbol, side }: { symbol: string; side: "buy" | "sell" }) {
-  const pts = (data.series[symbol] || []).map(([t, s, b, x]) => ({ t, s, v: side === "buy" ? b : x })).filter((p): p is { t: number; s: string; v: number } => p.v !== null);
+export async function History({ symbol, side }: { symbol: string; side: "buy" | "sell" }) {
+  const pts = (await historyFor(symbol)).map(({ t, s, buy, sell }) => ({ t, s, v: side === "buy" ? buy : sell })).filter((p): p is { t: number; s: string; v: number } => p.v !== null && p.v < 0.2);
   if (pts.length < 6) return null;
 
   const t0 = pts[0].t, t1 = pts[pts.length - 1].t;

@@ -4,6 +4,7 @@ import { cachedBoard } from "@/lib/board";
 import { pct } from "@/lib/verdict";
 import { CheckForm } from "@/components/check-form";
 import { Ago } from "@/components/ago";
+import { NightPanel } from "@/components/night-panel";
 
 const tone = (x: number) => (x >= 0.2 ? "text-bad font-medium" : x >= 0.0075 ? "text-bad" : x >= 0.003 ? "text-warn" : "text-soft");
 const signed = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${pct(Math.abs(x))}`;
@@ -23,6 +24,9 @@ export default function Home() {
       </section>
       <Suspense fallback={<BoardLoading />}>
         <Live />
+      </Suspense>
+      <Suspense fallback={null}>
+        <NightPanel />
       </Suspense>
       <Facts />
     </>
