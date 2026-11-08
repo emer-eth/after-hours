@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { connection } from "next/server";
+import { cacheLife } from "next/cache";
 import { cachedBoard, type BoardRow } from "@/lib/board";
 import { officialAssets, symbolsFor } from "@/lib/market";
 import { CHAIN, CHAINS, type ChainKey } from "@/lib/chains";
@@ -136,8 +136,10 @@ export default function Home() {
 }
 
 /* The hero's departures board: the costliest live trades right now, flipping in. */
-async function HeroBoard() {
-  await connection();
+/* Cached for a minute, so the whole page can be served from the CDN; "opens in" is shown to the hour, so that's plenty. */
+async function heroData() {
+  "use cache";
+  cacheLife({ stale: 60, revalidate: 60, expire: 600 });
   const rows = await cachedBoard().catch(() => []);
   const now = new Date();
   const session = sessionAt(now);
@@ -166,6 +168,11 @@ async function HeroBoard() {
       ],
     };
   });
+  return { flap, closed, opens };
+}
+
+async function HeroBoard() {
+  const { flap, closed, opens } = await heroData();
   if (!flap.length) return null;
   return (
     <div>
@@ -187,7 +194,7 @@ function StatStrip() {
   const stats = [
     { icon: "◐", label: "Traded after hours", n: 59, suf: "%", note: "of stock-token volume, Sep 24 – Oct 23", href: "https://cryptobriefing.com/robinhood-chain-stock-tokens-after-hours-trading/" },
     { icon: "▤", label: "Thinner at night", n: 33, pre: "up to ", suf: "%", note: "less liquidity near the price after the close", href: "https://www.techflowpost.com/en-US/article/35095" },
-    { icon: "◇", label: "Weekend as a signal", n: 54, pre: "~", suf: "%", note: "of Mondays called right: a coin flip", href: "https://cryptoslate.com/weekend-stock-tokens-predict-monday-open-but-guessing-up-scores-55/" },
+    { icon: "◇", label: "Weekend as a signal", n: 54, pre: "~", suf: "%", note: "of Mondays called right: a coin flip", href: "https://cryptonews.net/news/finance/33705325/" },
     { icon: "◉", label: "Assets watched", n: 48, note: "on Robinhood Chain and Base, with a Chainlink real price" },
   ];
   return (
@@ -216,14 +223,20 @@ function StatStrip() {
   );
 }
 
-async function Form() {
+async function symbolLists() {
+  "use cache";
+  cacheLife({ stale: 3600, revalidate: 3600, expire: 86400 });
   const lists = await Promise.all(
     CHAINS.map(async (c) => {
       const assets = await officialAssets(c).catch(() => new Map());
       return [c, symbolsFor(c).filter((s) => assets.has(s)).map((s) => ({ symbol: s, name: assets.get(s)!.name }))] as const;
     }),
   );
-  return <CheckForm symbols={Object.fromEntries(lists) as Record<ChainKey, { symbol: string; name: string }[]>} />;
+  return Object.fromEntries(lists) as Record<ChainKey, { symbol: string; name: string }[]>;
+}
+
+async function Form() {
+  return <CheckForm symbols={await symbolLists()} />;
 }
 
 function Board() {
