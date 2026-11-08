@@ -192,9 +192,9 @@ async function HeroBoard() {
 
 function StatStrip() {
   const stats = [
-    { icon: "◐", label: "Traded after hours", n: 59, suf: "%", note: "of stock-token volume, Sep 24 – Oct 23", href: "https://cryptobriefing.com/robinhood-chain-stock-tokens-after-hours-trading/" },
-    { icon: "▤", label: "Thinner at night", n: 33, pre: "up to ", suf: "%", note: "less liquidity near the price after the close", href: "https://www.techflowpost.com/en-US/article/35095" },
-    { icon: "◇", label: "Weekend as a signal", n: 54, pre: "~", suf: "%", note: "of Mondays called right: a coin flip", href: "https://cryptonews.net/news/finance/33705325/" },
+    { icon: "◐", label: "Traded after hours", n: 59, suf: "%", note: "of stock-token volume, Sep 24 – Oct 23", href: "/sources#after-hours-volume" },
+    { icon: "▤", label: "Thinner at night", n: 33, pre: "up to ", suf: "%", note: "less liquidity near the price after the close", href: "/sources#thinner-at-night" },
+    { icon: "◇", label: "Weekend as a signal", n: 54, pre: "~", suf: "%", note: "of Mondays called right: a coin flip", href: "/sources#weekend-signal" },
     { icon: "◉", label: "Assets watched", n: 48, note: "on Robinhood Chain and Base, with a Chainlink real price" },
   ];
   return (
@@ -213,7 +213,7 @@ function StatStrip() {
             {s.href && (
               <>
                 {" · "}
-                <a href={s.href} target="_blank" rel="noreferrer" className="underline decoration-line underline-offset-2 hover:text-soft">source</a>
+                <Link href={s.href} className="underline decoration-line underline-offset-2 hover:text-soft">source</Link>
               </>
             )}
           </p>

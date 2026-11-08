@@ -64,7 +64,7 @@ export async function DotField() {
           At that average, the <b className="font-medium text-ink">$532M</b> traded on weekends between Sep 24 and Oct 23 would have cost traders roughly{" "}
           <b className="font-medium text-lamp">${Math.round((532 * avg) * 10) / 10}M</b> against the last real price.
           <span className="mt-1 block text-xs text-faint">
-            Estimate: weekend volume (Crypto Briefing) × our logged average cost of a $10k trade. Real trade sizes vary.
+            Estimate: weekend volume (Crypto Briefing) × our logged average cost of a $10k trade. Real trade sizes vary. See sources & methodology.
           </span>
         </p>
         {baseAvg !== null && (

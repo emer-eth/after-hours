@@ -67,6 +67,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <li><Link href="/#how" className="hover:text-soft">How it works</Link></li>
                 <li><Link href="/#board" className="hover:text-soft">Tonight&apos;s board</Link></li>
                 <li><Link href="/#faq" className="hover:text-soft">FAQ</Link></li>
+                <li><Link href="/sources" className="hover:text-soft">Sources & methodology</Link></li>
                 <li><a href="https://github.com/emer-eth/after-hours" target="_blank" rel="noreferrer" className="hover:text-soft">Source on GitHub ↗</a></li>
               </ul>
             </div>
