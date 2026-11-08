@@ -43,3 +43,14 @@ export function nextOpen(d = new Date()): Date {
 }
 
 export const isClosed = (s: Session) => s !== "regular";
+
+/** When the current regular session ends (16:00 ET). Only meaningful while it's open. */
+export function nextClose(d = new Date()): Date {
+  const step = 15 * 60_000;
+  let x = new Date(Math.ceil(+d / step) * step);
+  for (let i = 0; i < 4 * 24; i++) {
+    if (sessionAt(x) !== "regular" && sessionAt(new Date(+x - step)) === "regular") return x;
+    x = new Date(+x + step);
+  }
+  return x;
+}

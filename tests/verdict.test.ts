@@ -41,3 +41,8 @@ test("sessions in New York time, including the weekend", () => {
   assert.equal(sessionAt(new Date("2026-11-09T22:00:00Z")), "after"); // Mon 17:00 ET
   assert.equal(nextOpen(new Date("2026-11-08T05:00:00Z")).toISOString(), "2026-11-09T14:30:00.000Z");
 });
+
+test("next close is 4pm New York time on a trading day", async () => {
+  const { nextClose } = await import("../src/lib/session");
+  assert.equal(nextClose(new Date("2026-11-09T15:00:00Z")).toISOString(), "2026-11-09T21:00:00.000Z"); // Mon 10:00 ET → 16:00 ET
+});
