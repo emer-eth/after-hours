@@ -11,6 +11,7 @@ import { Ago } from "@/components/ago";
 import { Countdown } from "@/components/countdown";
 import { History } from "@/components/history";
 import { ProtectedSwap } from "@/components/protected-swap";
+import { ShareButtons } from "@/components/share-buttons";
 
 type Props = { params: Promise<{ symbol: string }>; searchParams: Promise<{ side?: string; usd?: string }> };
 
@@ -23,7 +24,10 @@ function parse(sp: { side?: string; usd?: string }) {
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const symbol = (await params).symbol.toUpperCase();
   const { side, usd } = parse(await searchParams);
-  return { title: `${side === "buy" ? "Buying" : "Selling"} ${usdFmt(usd)} of ${symbol}` };
+  const title = `${side === "buy" ? "Buying" : "Selling"} ${usdFmt(usd)} of ${symbol}`;
+  const image = `/api/og?symbol=${encodeURIComponent(symbol)}&side=${side}&usd=${usd}`;
+  const description = "What this stock-token trade really costs on Robinhood Chain, against the last real price.";
+  return { title, description, openGraph: { title, description, images: [image] }, twitter: { card: "summary_large_image", title, description, images: [image] } };
 }
 
 const STYLE: Record<Call, { ring: string; chip: string; label: string }> = {
@@ -111,6 +115,7 @@ function Result({ r }: { r: CheckResult }) {
             {r.session === "weekend" ? "Wall Street opens" : "The regular session opens"} in <Countdown to={r.nextOpen} />. Pre-market starts 5½ hours earlier.
           </p>
         )}
+        <ShareButtons symbol={r.asset.symbol} side={r.side} usd={r.usd} title={v.title} costPct={v.costPct} />
       </section>
 
       <section className="mt-6 grid gap-4 sm:grid-cols-3" aria-label="The numbers">
