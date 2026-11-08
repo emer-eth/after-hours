@@ -58,7 +58,7 @@ export async function GET(req: Request) {
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 24, color: "#636c84" }}>
-          <span>Stock tokens on Robinhood Chain · quoted onchain</span>
+          <span>Stocks, ETFs and commodities on Robinhood Chain</span>
           <span>{url.host}</span>
         </div>
       </div>

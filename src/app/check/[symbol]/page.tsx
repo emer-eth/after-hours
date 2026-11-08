@@ -92,7 +92,7 @@ async function CheckBody({ params, searchParams }: Props) {
           <img src={r.asset.logo} alt="" className="pop size-12 rounded-full bg-panel-2 sm:size-14" />
         )}
         <div>
-          <p className="text-sm text-faint">{r ? r.asset.name : "Stock token"} · checked just now</p>
+          <p className="text-sm text-faint">{r ? r.asset.name : "Tokenized asset"} · checked just now</p>
           <h1 className="font-serif text-4xl tracking-tight sm:text-5xl">
             {side === "buy" ? "Buying" : "Selling"} {usdFmt(usd)} of <span className="text-lamp">{symbol}</span>
           </h1>

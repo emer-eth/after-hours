@@ -26,7 +26,7 @@ export function CheckForm({ symbols, initial }: { symbols: { symbol: string; nam
       }}
     >
       <label className="grid gap-1.5 text-sm text-soft">
-        Stock token
+        Asset
         <select className="field" value={symbol} onChange={(e) => setSymbol(e.target.value)}>
           {symbols.map((s) => (
             <option key={s.symbol} value={s.symbol}>

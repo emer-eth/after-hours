@@ -112,3 +112,8 @@ details[open] .chev { transform: rotate(45deg); }
 }
 
 body { overflow-x: clip; }
+
+/* Board filter chips: hide rows whose kind doesn't match the chosen filter. */
+.board-filter[data-filter="stock"] tr[data-kind]:not([data-kind="stock"]),
+.board-filter[data-filter="etf"] tr[data-kind]:not([data-kind="etf"]),
+.board-filter[data-filter="commodity"] tr[data-kind]:not([data-kind="commodity"]) { display: none; }

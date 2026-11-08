@@ -15,9 +15,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(site),
   openGraph: { siteName: "After Hours", images: ["/api/og"] },
   twitter: { card: "summary_large_image", images: ["/api/og"] },
-  title: { default: "After Hours: check a stock token trade before you make it", template: "%s · After Hours" },
+  title: { default: "After Hours: check a tokenized stock trade before you make it", template: "%s · After Hours" },
   description:
-    "Wall Street is closed, but Robinhood Chain stock tokens still trade. After Hours shows what your trade really costs against the last real price, and tells you whether to trade now, set a limit, or wait for the open.",
+    "Wall Street is closed, but tokenized stocks, ETFs and commodity funds on Robinhood Chain still trade. After Hours shows what your trade really costs against the last real price, and tells you whether to trade now, set a limit, or wait for the open.",
 };
 
 export const viewport: Viewport = { themeColor: "#0a0d16" };

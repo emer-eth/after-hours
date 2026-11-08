@@ -72,7 +72,7 @@ export function VerdictKey() {
 }
 
 const FAQ: [string, React.ReactNode][] = [
-  ["What's a stock token?", <>A token on Robinhood Chain that tracks one share of a real US stock, like NVDA or AAPL. Unlike the stock itself, it trades around the clock, including nights and weekends when Wall Street is closed.</>],
+  ["What can I check?", <>Any tokenized asset on Robinhood Chain that tracks a real US-listed security: company stocks like NVDA or AAPL, ETFs like SPY and QQQ, and commodity funds that track gold, silver and oil (GLD, SLV, USO). Each token tracks one share. Unlike the real thing, it trades around the clock, including nights and weekends when Wall Street is closed.</>],
   ["Why would the price be off at night?", <>When Wall Street closes, there&apos;s no live market to anchor the token. Liquidity near the price drops by a fifth to a third, and the same order moves the price more. Prices drift, and then usually snap back by the open.</>],
   ["What does “last real price” mean?", <>The stock&apos;s most recent price from the real market, published onchain by Chainlink. Robinhood itself points developers to these feeds. It already includes splits and dividends.</>],
   ["How is the cost worked out?", <>We quote your exact trade through the best route across every venue on Robinhood Chain (via KyberSwap), and compare what you&apos;d get with what the same trade is worth at the last real price. Fees and price impact are included.</>],
@@ -106,7 +106,7 @@ export function FinalCta() {
   return (
     <section className="reveal relative mt-28 overflow-hidden rounded-3xl border border-line bg-[radial-gradient(60rem_20rem_at_50%_0%,#f5b54422,transparent),var(--panel)] px-6 py-14 text-center">
       <h2 className="mx-auto max-w-2xl font-serif text-4xl leading-tight sm:text-5xl">Check the trade before you make it.</h2>
-      <p className="mx-auto mt-4 max-w-xl text-soft">Free, no account, two seconds. Works for every stock token on Robinhood Chain.</p>
+      <p className="mx-auto mt-4 max-w-xl text-soft">Free, no account, two seconds. Works for every tokenized stock, ETF and commodity fund on Robinhood Chain.</p>
       <Link href="#check" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-lamp px-6 py-3 font-medium text-night transition hover:brightness-110">
         Check a trade <span aria-hidden>→</span>
       </Link>
