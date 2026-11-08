@@ -13,6 +13,18 @@
 
 Read-only data needs no keys: Robinhood's public `rhj` API, Chainlink feeds and Uniswap v3 on Robinhood Chain (chain 4663), and DexScreener for pool discovery.
 
+## Public API
+
+```
+GET /api/check?symbol=NVDA&side=sell&usd=10000
+```
+
+Returns the call (`fair`, `limit`, `split`, `wait`, `bonus`, `thin`), Chainlink's last real price, the best fill and venues, the cost (USD and %, split into drift and size impact) and a protective limit. CORS open, cached 30 s, no key while in beta.
+
+## Business model
+
+Checks stay free. Planned: a small disclosed fee on protected swaps, and a Pro API with alerts for wallets and trading desks.
+
 ## Run
 
 ```bash

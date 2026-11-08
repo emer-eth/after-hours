@@ -95,7 +95,7 @@ export function Faq() {
   return (
     <section className="mt-36 grid gap-12 lg:grid-cols-[1fr_1.6fr]" aria-labelledby="faq-title">
       <div>
-        <Chapter n="06" id="faq">Questions</Chapter>
+        <Chapter n="09" id="faq">Questions</Chapter>
         <h2 id="faq-title" className="display reveal mt-6 text-5xl sm:text-6xl">Good to know.</h2>
         <p className="reveal mt-5 max-w-xs text-soft">Everything about the numbers, the data and what we don&apos;t collect.</p>
       </div>

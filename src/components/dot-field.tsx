@@ -56,6 +56,13 @@ export async function DotField() {
             <dd className="mt-2 font-serif text-3xl tracking-tight">48h</dd>
           </div>
         </dl>
+        <p className="mt-6 border-l-2 border-lamp pl-4 text-[15px] leading-relaxed text-soft">
+          At that average, the <b className="font-medium text-ink">$532M</b> traded on weekends between Sep 24 and Oct 23 would have cost traders roughly{" "}
+          <b className="font-medium text-lamp">${Math.round((532 * avg) * 10) / 10}M</b> against the last real price.
+          <span className="mt-1 block text-xs text-faint">
+            Estimate: weekend volume (Crypto Briefing) × our logged average cost of a $10k trade. Real trade sizes vary.
+          </span>
+        </p>
         <p className="mt-5 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[11px] tracking-[.12em] text-soft uppercase">
           <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-good" />Fair {counts.fair || 0}</span>
           <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-warn" />Limit {counts.limit || 0}</span>

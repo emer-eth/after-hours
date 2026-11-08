@@ -16,6 +16,7 @@ import { BoardFilter } from "@/components/board-filter";
 import { FlapBoard, type FlapRow } from "@/components/flap-board";
 import { DotField } from "@/components/dot-field";
 import { ScrollWords } from "@/components/scroll-words";
+import { ForBuilders, NotAnAggregator, WhereItsGoing } from "@/components/product-sections";
 
 const tone = (x: number) => (x >= 0.0075 ? "text-bad" : x >= 0.003 ? "text-warn" : "text-soft");
 const signed = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${pct(Math.abs(x))}`;
@@ -104,10 +105,11 @@ export default function Home() {
 
       <HowItWorks />
       <VerdictKey />
+      <NotAnAggregator />
 
       {/* ───────── 04 Try it ───────── */}
       <section className="mt-36" aria-labelledby="check-title">
-        <Chapter n="04" id="check">Try it</Chapter>
+        <Chapter n="05" id="check">Try it</Chapter>
         <h2 id="check-title" className="display reveal mt-6 text-5xl sm:text-6xl">Check a trade.</h2>
         <p className="reveal mt-5 max-w-xl text-soft">Pick a stock, ETF or commodity fund, buy or sell, and how much. You&apos;ll get the real cost, one plain call, and a protected way to trade.</p>
         <div className="reveal mt-10">
@@ -124,6 +126,8 @@ export default function Home() {
         <Board />
       </Suspense>
 
+      <ForBuilders />
+      <WhereItsGoing />
       <Faq />
       <FinalCta />
     </>
@@ -226,7 +230,7 @@ async function Board() {
   const counts = rows.reduce<Record<string, number>>((c, r) => ((c[kindOf(r.symbol)] = (c[kindOf(r.symbol)] || 0) + 1), c), {});
   return (
     <section className="mt-36" aria-labelledby="board-title">
-      <Chapter n="05" id="board">Live board</Chapter>
+      <Chapter n="06" id="board">Live board</Chapter>
       <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
         <h2 id="board-title" className="display reveal text-5xl sm:text-6xl">Tonight&apos;s board.</h2>
         <p className="label reveal flex items-center gap-2">

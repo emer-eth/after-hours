@@ -47,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/#problem" className="transition-colors hover:text-ink">Why</Link>
               <Link href="/#how" className="transition-colors hover:text-ink">How it works</Link>
               <Link href="/#board" className="transition-colors hover:text-ink">Board</Link>
+              <Link href="/#api" className="transition-colors hover:text-ink">API</Link>
               <Link href="/#faq" className="transition-colors hover:text-ink">FAQ</Link>
             </nav>
             <div className="flex items-center gap-2">
