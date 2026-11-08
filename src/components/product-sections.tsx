@@ -94,6 +94,8 @@ export function ForBuilders() {
         </pre>
         <div className="border-t border-line px-5 py-3 font-mono text-[11px] text-faint">
           <a href="/api/check?symbol=NVDA&side=sell&usd=10000&chain=base" target="_blank" className="text-soft underline decoration-line underline-offset-4 hover:text-lamp">Try it live ▸</a>
+          <span className="mx-3 text-line-2">|</span>
+          <a href="https://github.com/emer-eth/after-hours" target="_blank" rel="noreferrer" className="text-soft underline decoration-line underline-offset-4 hover:text-lamp">Source on GitHub ▸</a>
         </div>
       </div>
     </section>

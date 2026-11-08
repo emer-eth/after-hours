@@ -2,6 +2,8 @@
 
 **Wall Street is asleep. Its stocks aren't.**
 
+Live: https://after-hours-rouge.vercel.app
+
 Covers Robinhood Chain and Base (Coinbase tokenized stocks). 59% of stock-token trading on Robinhood Chain happens outside US market hours, when pools are thin and there's no live market to check against. After Hours checks a stock-token trade before you make it:
 
 - **What it really costs.** Your fill through the best route across every venue on Robinhood Chain (KyberSwap), next to a single Uniswap v3 pool (QuoterV2), against Chainlink's last real price for the stock. The cost is split into pool drift and your own size.

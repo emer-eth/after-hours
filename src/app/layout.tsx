@@ -67,12 +67,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <li><Link href="/#how" className="hover:text-soft">How it works</Link></li>
                 <li><Link href="/#board" className="hover:text-soft">Tonight&apos;s board</Link></li>
                 <li><Link href="/#faq" className="hover:text-soft">FAQ</Link></li>
+                <li><a href="https://github.com/emer-eth/after-hours" target="_blank" rel="noreferrer" className="hover:text-soft">Source on GitHub ↗</a></li>
               </ul>
             </div>
           </div>
           <div className="mx-auto flex w-full max-w-6xl justify-between border-t border-line px-4 py-5 font-mono text-[11px] tracking-[.14em] text-faint uppercase sm:px-6">
             <span>Robinhood Chain · 4663</span>
-            <span>Built with Claude Code</span>
+            <a href="https://github.com/emer-eth/after-hours" target="_blank" rel="noreferrer" className="transition-colors hover:text-soft">Open source · Built with Claude Code</a>
           </div>
         </footer>
         <SmoothScroll />
