@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { cachedBoard, type BoardRow } from "@/lib/board";
+import { officialAssets, symbolsFor } from "@/lib/market";
+import { CHAIN, CHAINS, type ChainKey } from "@/lib/chains";
+import { ChainTabs } from "@/components/chain-tabs";
 import { nextOpen, sessionAt } from "@/lib/session";
 import { pct, verdict, type Call } from "@/lib/verdict";
 import { KIND_LABEL, kindOf } from "@/lib/kinds";
@@ -39,7 +42,7 @@ export default function Home() {
         <div>
           <p className="label rise flex items-center gap-2.5">
             <span className="h-3 w-[3px] bg-lamp" aria-hidden />
-            <b>After-hours trade check</b> <span className="hidden text-faint sm:inline">for Robinhood Chain</span>
+            <b>After-hours trade check</b> <span className="hidden text-faint sm:inline">Robinhood Chain · Base</span>
           </p>
           <h1 className="display rise mt-8 text-[3.4rem] sm:text-[5.6rem]" style={{ ["--d" as string]: ".06s" }}>
             Wall Street
@@ -49,7 +52,7 @@ export default function Home() {
             <span className="text-lamp">Its stocks aren&apos;t.</span>
           </h1>
           <p className="rise mt-8 max-w-[34rem] text-[17px] leading-relaxed text-soft" style={{ ["--d" as string]: ".14s" }}>
-            Tokenized stocks, ETFs and commodity funds trade all night, in thin markets with nothing live to check against. After Hours shows what your trade really costs before you make it, and whether to trade now or wait.
+            Tokenized stocks, ETFs and commodity funds on Robinhood Chain and Base trade all night, in thin markets with nothing live to check against. After Hours shows what your trade really costs before you make it, and whether to trade now or wait.
           </p>
           <div className="rise mt-10 flex flex-wrap items-center gap-3" style={{ ["--d" as string]: ".22s" }}>
             <Link href="#check" className="group flex items-center border border-line-2 text-[12px] font-medium tracking-[.14em] uppercase transition-colors hover:border-lamp/60">
@@ -111,7 +114,7 @@ export default function Home() {
       <section className="mt-36" aria-labelledby="check-title">
         <Chapter n="05" id="check">Try it</Chapter>
         <h2 id="check-title" className="display reveal mt-6 text-5xl sm:text-6xl">Check a trade.</h2>
-        <p className="reveal mt-5 max-w-xl text-soft">Pick a stock, ETF or commodity fund, buy or sell, and how much. You&apos;ll get the real cost, one plain call, and a protected way to trade.</p>
+        <p className="reveal mt-5 max-w-xl text-soft">Pick a chain, a stock, ETF or commodity fund, buy or sell, and how much. You&apos;ll get the real cost, one plain call, and a protected way to trade.</p>
         <div className="reveal mt-10">
           <Suspense fallback={<div className="panel shimmer h-[118px]" aria-hidden />}>
             <Form />
@@ -122,9 +125,7 @@ export default function Home() {
         </Suspense>
       </section>
 
-      <Suspense fallback={<div className="panel shimmer mt-36 h-96" aria-hidden />}>
-        <Board />
-      </Suspense>
+      <Board />
 
       <ForBuilders />
       <WhereItsGoing />
@@ -187,7 +188,7 @@ function StatStrip() {
     { icon: "◐", label: "Traded after hours", n: 59, suf: "%", note: "of stock-token volume, Sep 24 – Oct 23", href: "https://cryptobriefing.com/robinhood-chain-stock-tokens-after-hours-trading/" },
     { icon: "▤", label: "Thinner at night", n: 33, pre: "up to ", suf: "%", note: "less liquidity near the price after the close", href: "https://www.techflowpost.com/en-US/article/35095" },
     { icon: "◇", label: "Weekend as a signal", n: 54, pre: "~", suf: "%", note: "of Mondays called right: a coin flip", href: "https://cryptoslate.com/weekend-stock-tokens-predict-monday-open-but-guessing-up-scores-55/" },
-    { icon: "◉", label: "Assets watched", n: 35, note: "stocks, ETFs and commodity funds, every 10 min" },
+    { icon: "◉", label: "Assets watched", n: 48, note: "on Robinhood Chain and Base, with a Chainlink real price" },
   ];
   return (
     <section className="reveal grid grid-cols-2 border-y border-line lg:grid-cols-4 lg:divide-x lg:divide-line" aria-label="Key numbers">
@@ -216,12 +217,49 @@ function StatStrip() {
 }
 
 async function Form() {
-  const rows = await cachedBoard().catch(() => []);
-  return <CheckForm symbols={rows.map((r) => ({ symbol: r.symbol, name: r.name }))} />;
+  const lists = await Promise.all(
+    CHAINS.map(async (c) => {
+      const assets = await officialAssets(c).catch(() => new Map());
+      return [c, symbolsFor(c).filter((s) => assets.has(s)).map((s) => ({ symbol: s, name: assets.get(s)!.name }))] as const;
+    }),
+  );
+  return <CheckForm symbols={Object.fromEntries(lists) as Record<ChainKey, { symbol: string; name: string }[]>} />;
 }
 
-async function Board() {
-  const all = await cachedBoard().catch(() => []);
+function Board() {
+  return (
+    <section className="mt-36" aria-labelledby="board-title">
+      <Chapter n="06" id="board">Live board</Chapter>
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
+        <h2 id="board-title" className="display reveal text-5xl sm:text-6xl">Tonight&apos;s board.</h2>
+        <p className="label reveal flex items-center gap-2">
+          <span className="live-dot size-1.5 rounded-full bg-good" aria-hidden /> Best route · refreshed every few minutes
+        </p>
+      </div>
+      <p className="reveal mt-5 max-w-2xl text-soft">
+        What a $10,000 trade costs right now, against each asset&apos;s <Term tip="The stock's most recent price on the real market, published onchain by Chainlink.">last real price</Term>. Robinhood Chain and Base, side by side. Tap a row for the full check.
+      </p>
+      <ChainTabs
+        panes={{
+          robinhood: (
+            <Suspense fallback={<div className="panel shimmer mt-6 h-96" aria-hidden />}>
+              <BoardTable chain="robinhood" />
+            </Suspense>
+          ),
+          base: (
+            <Suspense fallback={<div className="panel shimmer mt-6 h-96" aria-hidden />}>
+              <BoardTable chain="base" />
+            </Suspense>
+          ),
+        }}
+      />
+    </section>
+  );
+}
+
+async function BoardTable({ chain }: { chain: ChainKey }) {
+  const all = await cachedBoard(chain).catch(() => []);
+  const q = chain === "base" ? "&chain=base" : "";
   // Tokens where a $10k trade would lose 20%+ either way aren't really tradeable; list them apart instead of as numbers.
   const isThin = (r: BoardRow) => Math.max(r.buyCostPct, r.sellCostPct) >= 0.2;
   const rows = all.filter((r) => !isThin(r));
@@ -229,20 +267,9 @@ async function Board() {
   const maxCost = Math.max(0.01, ...rows.map((r) => Math.min(0.05, Math.max(r.buyCostPct, r.sellCostPct))));
   const counts = rows.reduce<Record<string, number>>((c, r) => ((c[kindOf(r.symbol)] = (c[kindOf(r.symbol)] || 0) + 1), c), {});
   return (
-    <section className="mt-36" aria-labelledby="board-title">
-      <Chapter n="06" id="board">Live board</Chapter>
-      <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
-        <h2 id="board-title" className="display reveal text-5xl sm:text-6xl">Tonight&apos;s board.</h2>
-        <p className="label reveal flex items-center gap-2">
-          <span className="live-dot size-1.5 rounded-full bg-good" aria-hidden /> Best route · every 10 min
-        </p>
-      </div>
-      <p className="reveal mt-5 max-w-2xl text-soft">
-        What a $10,000 trade costs right now, against each asset&apos;s <Term tip="The stock's most recent price on the real market, published onchain by Chainlink.">last real price</Term>. Tap a row for the full check.
-      </p>
-
+    <div>
       {rows.length === 0 ? (
-        <p className="panel mt-8 p-6 text-soft">Robinhood Chain didn&apos;t answer just now. Refresh in a minute.</p>
+        <p className="panel mt-8 p-6 text-soft">{CHAIN[chain].label} didn&apos;t answer just now. Refresh in a minute.</p>
       ) : (
         <BoardFilter counts={counts}>
           <div className="reveal mt-5 overflow-x-auto border-y border-line">
@@ -260,7 +287,7 @@ async function Board() {
                 {rows.map((r) => (
                   <tr key={r.symbol} data-kind={kindOf(r.symbol)} className="group border-b border-line/60 transition-colors last:border-0 hover:bg-white/[0.02]">
                     <td className="py-3.5 pr-4">
-                      <Link href={`/check/${r.symbol}?side=${r.sellCostPct > r.buyCostPct ? "sell" : "buy"}&usd=10000`} className="flex items-center gap-3">
+                      <Link href={`/check/${r.symbol}?side=${r.sellCostPct > r.buyCostPct ? "sell" : "buy"}&usd=10000${q}`} className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={r.logo} alt="" className="size-8 rounded-full bg-panel-2" loading="lazy" />
                         <span>
@@ -292,13 +319,13 @@ async function Board() {
           <span className="text-soft">Too thin to trade $10k right now</span> (it would lose 20% or more):{" "}
           {thin.map((r, i) => (
             <span key={r.symbol}>
-              <Link href={`/check/${r.symbol}?side=sell&usd=1000`} className="underline decoration-line underline-offset-4 hover:text-soft">{r.symbol}</Link>
+              <Link href={`/check/${r.symbol}?side=sell&usd=1000${q}`} className="underline decoration-line underline-offset-4 hover:text-soft">{r.symbol}</Link>
               {i < thin.length - 1 ? ", " : "."}
             </span>
           ))}
         </p>
       )}
-    </section>
+    </div>
   );
 }
 

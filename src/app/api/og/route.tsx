@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { checkTrade } from "@/lib/check";
 import { pct, usdFmt, type Call } from "@/lib/verdict";
+import { CHAIN, chainOf } from "@/lib/chains";
 
 // The share card for a check: the call, the trade and what it costs, live when the card is fetched.
 
@@ -20,13 +21,14 @@ export async function GET(req: Request) {
   const symbol = (q.get("symbol") || "NVDA").toUpperCase().replace(/[^A-Z.]/g, "").slice(0, 10);
   const side = q.get("side") === "buy" ? "buy" : "sell";
   const usd = Math.min(5_000_000, Math.max(10, Math.round(Number(q.get("usd")) || 10_000)));
+  const chain = chainOf(q.get("chain"));
 
   let call: Call | "none" = "none";
   let title = "Check a stock-token trade before you make it";
   let line = "Wall Street is asleep. Its stocks aren't.";
   let cost = "";
   try {
-    const r = await checkTrade(symbol, side, usd);
+    const r = await checkTrade(symbol, side, usd, chain);
     call = r.verdict.call;
     title = r.verdict.title;
     const v = r.verdict;
@@ -58,7 +60,7 @@ export async function GET(req: Request) {
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 24, color: "#636c84" }}>
-          <span>Stocks, ETFs and commodities on Robinhood Chain</span>
+          <span>{CHAIN[chain].label} · quoted onchain</span>
           <span>{url.host}</span>
         </div>
       </div>

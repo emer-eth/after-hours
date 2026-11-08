@@ -5,15 +5,17 @@ import { pct } from "@/lib/verdict";
 import { track } from "@/lib/track";
 
 /** Share this check: a post on X (the card shows up as its image), the link itself, or the card as a PNG. */
-export function ShareButtons({ symbol, side, usd, title, costPct }: { symbol: string; side: "buy" | "sell"; usd: number; title: string; costPct: number }) {
+export function ShareButtons({ symbol, side, usd, chain = "robinhood", title, costPct }: { symbol: string; side: "buy" | "sell"; usd: number; chain?: "robinhood" | "base"; title: string; costPct: number }) {
   const [copied, setCopied] = useState(false);
-  const path = `/check/${symbol}?side=${side}&usd=${usd}`;
-  const card = `/api/og?symbol=${symbol}&side=${side}&usd=${usd}`;
+  const q = `side=${side}&usd=${usd}${chain === "base" ? "&chain=base" : ""}`;
+  const path = `/check/${symbol}?${q}`;
+  const card = `/api/og?symbol=${symbol}&${q}`;
+  const where = chain === "base" ? "Base" : "Robinhood Chain";
   const amount = `$${usd.toLocaleString("en-US")}`;
   const text =
     costPct >= 0.003
-      ? `${side === "buy" ? "Buying" : "Selling"} ${amount} of $${symbol} on Robinhood Chain right now costs ${pct(costPct)} vs the last real price. After Hours says: ${title.toLowerCase()}.`
-      : `Checked a ${amount} ${side} of $${symbol} on Robinhood Chain before trading. After Hours says: ${title.toLowerCase()}.`;
+      ? `${side === "buy" ? "Buying" : "Selling"} ${amount} of $${symbol} on ${where} right now costs ${pct(costPct)} vs the last real price. After Hours says: ${title.toLowerCase()}.`
+      : `Checked a ${amount} ${side} of $${symbol} on ${where} before trading. After Hours says: ${title.toLowerCase()}.`;
 
   const full = () => (typeof window !== "undefined" ? `${window.location.origin}${path}` : path);
   const btn = "rounded-lg border border-line bg-panel/60 px-3 py-1.5 text-sm text-soft transition-colors hover:border-faint hover:text-ink";

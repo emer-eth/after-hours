@@ -61,7 +61,7 @@ export function ForBuilders() {
           One call before every trade.
         </h2>
         <p className="reveal mt-6 max-w-md leading-relaxed text-soft">
-          Wallets, trading bots and AI agents can ask After Hours before they swap a stock token. Free, public, no key while it&apos;s in beta.
+          Wallets, trading bots and AI agents can ask After Hours before they swap a stock token, on Robinhood Chain or Base. Free, public, no key while it&apos;s in beta.
         </p>
         <ul className="reveal mt-8 grid gap-3 text-[15px] text-soft">
           {["Wallets: warn before a bad after-hours fill", "Bots and agents: skip trades that cost more than they should", "Dashboards: show the real cost next to the price"].map((t) => (
@@ -80,7 +80,7 @@ export function ForBuilders() {
         <pre className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed text-soft">
           <code>
             <span className="text-faint">$ </span>
-            <span className="text-ink">curl</span> <span className="text-good">&quot;/api/check?symbol=NVDA&amp;side=sell&amp;usd=10000&quot;</span>
+            <span className="text-ink">curl</span> <span className="text-good">&quot;/api/check?symbol=NVDA&amp;side=sell&amp;usd=10000&amp;chain=base&quot;</span>
             {"\n\n"}
             {"{"}
             {"\n  "}<span className="text-cool">&quot;call&quot;</span>: <span className="text-warn">&quot;limit&quot;</span>,
@@ -93,7 +93,7 @@ export function ForBuilders() {
           </code>
         </pre>
         <div className="border-t border-line px-5 py-3 font-mono text-[11px] text-faint">
-          <a href="/api/check?symbol=NVDA&side=sell&usd=10000" target="_blank" className="text-soft underline decoration-line underline-offset-4 hover:text-lamp">Try it live ▸</a>
+          <a href="/api/check?symbol=NVDA&side=sell&usd=10000&chain=base" target="_blank" className="text-soft underline decoration-line underline-offset-4 hover:text-lamp">Try it live ▸</a>
         </div>
       </div>
     </section>
@@ -105,7 +105,7 @@ const PLAN = [
   { stage: "Live", tone: "text-good border-good/40", title: "Public API", body: "One call before a trade, for wallets, bots and agents. Open while in beta." },
   { stage: "Next", tone: "text-warn border-warn/40", title: "Small fee on protected swaps", body: "A disclosed fee of around 0.1% only when you trade through After Hours, the way wallets and routers charge today. Checking stays free." },
   { stage: "Next", tone: "text-warn border-warn/40", title: "Pro API and alerts", body: "Higher limits and an SLA for wallets and trading desks. Alerts when a stock you hold drifts after hours." },
-  { stage: "Later", tone: "text-soft border-line-2", title: "Every chain with stock tokens", body: "The same check wherever tokenized equities trade around the clock, on any chain." },
+  { stage: "Later", tone: "text-soft border-line-2", title: "More chains and assets", body: "Robinhood Chain and Base today. Next, every chain where tokenized equities trade around the clock." },
 ];
 
 /** How it becomes a business. */

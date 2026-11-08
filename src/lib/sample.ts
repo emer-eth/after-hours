@@ -45,7 +45,7 @@ async function sampleOne(symbol: string, at: string, session: string): Promise<S
   // The best available fill (best route across all venues, or the Uniswap pool if that's better).
   // $10k (the size the app shows) goes through the best route; $1k and $50k use the Uniswap pool, to stay within the
   // aggregator's free rate limit.
-  const all = await Promise.all(SIZES.flatMap((usd) => [fills(asset.address, "buy", usd, ref, pools, usd === 10_000), fills(asset.address, "sell", usd, ref, pools, usd === 10_000)]));
+  const all = await Promise.all(SIZES.flatMap((usd) => [fills(asset, "buy", usd, ref, pools, usd === 10_000), fills(asset, "sell", usd, ref, pools, usd === 10_000)]));
   if (all.every((f) => !f)) return null;
   const [buy1k, sell1k, buy10k, sell10k, buy50k, sell50k] = all.map((f) => f?.best.price ?? null);
   return {

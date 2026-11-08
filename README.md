@@ -2,7 +2,7 @@
 
 **Wall Street is asleep. Its stocks aren't.**
 
-59% of stock-token trading on Robinhood Chain happens outside US market hours, when pools are thin and there's no live market to check against. After Hours checks a stock-token trade before you make it:
+Covers Robinhood Chain and Base (Coinbase tokenized stocks). 59% of stock-token trading on Robinhood Chain happens outside US market hours, when pools are thin and there's no live market to check against. After Hours checks a stock-token trade before you make it:
 
 - **What it really costs.** Your fill through the best route across every venue on Robinhood Chain (KyberSwap), next to a single Uniswap v3 pool (QuoterV2), against Chainlink's last real price for the stock. The cost is split into pool drift and your own size.
 - **One plain call.** Trade now, set a limit, split it, wait for the open, or the pool's too thin.
@@ -16,7 +16,8 @@ Read-only data needs no keys: Robinhood's public `rhj` API, Chainlink feeds and 
 ## Public API
 
 ```
-GET /api/check?symbol=NVDA&side=sell&usd=10000
+GET /api/check?symbol=NVDA&side=sell&usd=10000            # Robinhood Chain
+GET /api/check?symbol=NVDA&side=sell&usd=10000&chain=base  # Base
 ```
 
 Returns the call (`fair`, `limit`, `split`, `wait`, `bonus`, `thin`), Chainlink's last real price, the best fill and venues, the cost (USD and %, split into drift and size impact) and a protective limit. CORS open, cached 30 s, no key while in beta.

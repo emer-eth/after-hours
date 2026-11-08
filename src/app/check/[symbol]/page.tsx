@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import { after, connection } from "next/server";
 import { track } from "@/lib/track";
 import { checkTrade, CheckError, type CheckResult } from "@/lib/check";
-import { officialAssets, SYMBOLS } from "@/lib/market";
+import { officialAssets, symbolsFor } from "@/lib/market";
+import { CHAIN, CHAINS, chainOf, type ChainKey } from "@/lib/chains";
 import { SESSION_LABEL } from "@/lib/session";
 import { pct, usdFmt, type Call } from "@/lib/verdict";
 import { CheckForm } from "@/components/check-form";
@@ -18,19 +19,20 @@ import { CheckLoading } from "@/components/check-loading";
 import { CountUp } from "@/components/ui/count-up";
 import { Term } from "@/components/ui/term";
 
-type Props = { params: Promise<{ symbol: string }>; searchParams: Promise<{ side?: string; usd?: string }> };
+type Props = { params: Promise<{ symbol: string }>; searchParams: Promise<{ side?: string; usd?: string; chain?: string }> };
 
-function parse(sp: { side?: string; usd?: string }) {
+function parse(sp: { side?: string; usd?: string; chain?: string }) {
+  const chain = chainOf(sp.chain);
   const side = sp.side === "buy" ? "buy" : "sell";
   const usd = Math.min(5_000_000, Math.max(10, Math.round(Number(sp.usd) || 10_000)));
-  return { side, usd } as const;
+  return { side, usd, chain } as const;
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const symbol = (await params).symbol.toUpperCase();
-  const { side, usd } = parse(await searchParams);
-  const title = `${side === "buy" ? "Buying" : "Selling"} ${usdFmt(usd)} of ${symbol}`;
-  const image = `/api/og?symbol=${encodeURIComponent(symbol)}&side=${side}&usd=${usd}`;
+  const { side, usd, chain } = parse(await searchParams);
+  const title = `${side === "buy" ? "Buying" : "Selling"} ${usdFmt(usd)} of ${symbol}${chain === "base" ? " on Base" : ""}`;
+  const image = `/api/og?symbol=${encodeURIComponent(symbol)}&side=${side}&usd=${usd}&chain=${chain}`;
   const description = "What this stock-token trade really costs on Robinhood Chain, against the last real price.";
   return { title, description, openGraph: { title, description, images: [image] }, twitter: { card: "summary_large_image", title, description, images: [image] } };
 }
@@ -68,14 +70,19 @@ function Loading() {
 async function CheckBody({ params, searchParams }: Props) {
   await connection(); // always live: a check is about this minute
   const symbol = (await params).symbol.toUpperCase();
-  const { side, usd } = parse(await searchParams);
-  const assets = await officialAssets().catch(() => new Map());
-  const symbols = SYMBOLS.filter((s) => assets.has(s)).map((s) => ({ symbol: s, name: assets.get(s)!.name }));
+  const { side, usd, chain } = parse(await searchParams);
+  const lists = await Promise.all(
+    CHAINS.map(async (c) => {
+      const assets = await officialAssets(c).catch(() => new Map());
+      return [c, symbolsFor(c).filter((s) => assets.has(s)).map((s) => ({ symbol: s, name: assets.get(s)!.name }))] as const;
+    }),
+  );
+  const symbols = Object.fromEntries(lists) as Record<ChainKey, { symbol: string; name: string }[]>;
 
   let r: CheckResult | null = null;
   let error: { message: string; fix: string } | null = null;
   try {
-    r = await checkTrade(symbol, side, usd);
+    r = await checkTrade(symbol, side, usd, chain);
     const call = r.verdict.call;
     after(() => track("check", { symbol, side, usd, verdict: call }));
   } catch (e) {
@@ -92,7 +99,7 @@ async function CheckBody({ params, searchParams }: Props) {
           <img src={r.asset.logo} alt="" className="pop size-12 rounded-full bg-panel-2 sm:size-14" />
         )}
         <div>
-          <p className="text-sm text-faint">{r ? r.asset.name : "Tokenized asset"} · checked just now</p>
+          <p className="text-sm text-faint">{r ? r.asset.name : "Tokenized asset"} · <span className="text-soft">{CHAIN[chain].label}</span> · checked just now</p>
           <h1 className="font-serif text-4xl tracking-tight sm:text-5xl">
             {side === "buy" ? "Buying" : "Selling"} {usdFmt(usd)} of <span className="text-lamp">{symbol}</span>
           </h1>
@@ -110,7 +117,7 @@ async function CheckBody({ params, searchParams }: Props) {
 
       <h2 className="mt-20 mb-2 font-serif text-3xl">Check another trade</h2>
       <p className="mb-5 text-sm text-soft">Try a different size or side. Smaller trades often cost far less at night.</p>
-      <CheckForm symbols={symbols} initial={{ symbol, side, usd }} />
+      <CheckForm symbols={symbols} initial={{ symbol, side, usd, chain }} />
     </div>
   );
 }
@@ -134,7 +141,7 @@ function Result({ r }: { r: CheckResult }) {
               {r.session === "weekend" ? "Wall Street opens" : "The regular session opens"} in <Countdown to={r.nextOpen} />
             </p>
           )}
-          <ShareButtons symbol={r.asset.symbol} side={r.side} usd={r.usd} title={v.title} costPct={v.costPct} />
+          <ShareButtons symbol={r.asset.symbol} side={r.side} usd={r.usd} chain={r.chain} title={v.title} costPct={v.costPct} />
         </div>
 
         <div className="flex flex-col justify-between rounded-2xl border border-line bg-night/40 p-5">
@@ -183,19 +190,19 @@ function Result({ r }: { r: CheckResult }) {
 
       <Routes r={r} />
 
-      {v.call !== "thin" && <ProtectedSwap symbol={r.asset.symbol} token={r.asset.address} side={r.side} usd={r.usd} lastPrice={r.last.price} />}
+      {v.call !== "thin" && <ProtectedSwap chain={r.chain} symbol={r.asset.symbol} token={r.asset.address} decimals={r.asset.decimals} side={r.side} usd={r.usd} lastPrice={r.last.price} />}
 
       <section className="panel mt-6 p-5 text-sm" aria-label="Is this the real token?">
         <p className="flex items-center gap-2 font-medium">
           <span className="grid size-5 place-items-center rounded-full bg-good text-night" aria-hidden>✓</span>
-          Official Robinhood token: {r.asset.name}
+          Official {CHAIN[r.chain].issuer} token on {CHAIN[r.chain].label}: {r.asset.name}
         </p>
         <p className="mt-2 text-soft">
           Contract{" "}
-          <a className="font-mono text-ink underline decoration-line underline-offset-4 hover:decoration-lamp" href={`https://robinhoodchain.blockscout.com/token/${r.asset.address}`} target="_blank" rel="noreferrer">
+          <a className="font-mono text-ink underline decoration-line underline-offset-4 hover:decoration-lamp" href={CHAIN[r.chain].explorerToken(r.asset.address)} target="_blank" rel="noreferrer">
             {short(r.asset.address)}
           </a>
-          , from Robinhood&apos;s own asset list. Anyone can launch a token called {r.asset.symbol}; only this address is the real one.
+          , from {CHAIN[r.chain].issuer}&apos;s own asset list. Anyone can launch a token called {r.asset.symbol}; only this address is the real one.
         </p>
       </section>
 
@@ -213,7 +220,7 @@ function Routes({ r }: { r: CheckResult }) {
       <section className="panel mt-6 p-5 text-sm" aria-labelledby="routes">
         <h2 id="routes" className="label"><b>Where it fills best</b></h2>
         <p className="mt-2 text-soft">
-          We checked every venue on Robinhood Chain. The deepest Uniswap v3 pool is already the best route here, at <span className="text-ink tnum">{money(r.route.price)}</span> per share.
+          We checked every venue on {CHAIN[r.chain].label}. The deepest Uniswap v3 pool is already the best route here, at <span className="text-ink tnum">{money(r.route.price)}</span> per share.
         </p>
       </section>
     );
