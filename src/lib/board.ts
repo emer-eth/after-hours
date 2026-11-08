@@ -79,5 +79,7 @@ export async function board(): Promise<BoardRow[]> {
 export async function cachedBoard() {
   "use cache";
   cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  return board();
+  const rows = await board();
+  if (!rows.length) throw new Error("empty board"); // never cache a failure; callers fall back
+  return rows;
 }

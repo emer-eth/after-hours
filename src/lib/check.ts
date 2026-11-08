@@ -36,6 +36,7 @@ export async function checkTrade(symbol: string, side: Side, usd: number) {
     h24: cl.h24,
     robinhood: rh,
     best: f.best,
+    small: small?.best.price ?? null, // what a $1k trade fills at: the market's own price, without your size
     route: f.route,
     uniswap: f.uniswap && { price: f.uniswap.price, tokens: f.uniswap.tokens, usd: f.uniswap.usd, pool: f.uniswap.pool.address, fee: f.uniswap.pool.fee },
     pools: pools.map((p) => ({ address: p.address, fee: p.fee, liquidityUsd: p.liquidityUsd })),
