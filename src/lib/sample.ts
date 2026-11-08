@@ -1,13 +1,16 @@
-// One snapshot of every stock token: Chainlink's last real price and 24/7 price, and what $1k/$10k/$50k buys and sells fill at
-// ($10k through the best route; $1k and $50k through the deepest Uniswap v3 pool).
+// One snapshot of every stock token on Robinhood Chain and Base: Chainlink's last real price and 24/7 price, and what
+// $1k/$10k/$50k buys and sells fill at ($10k through the best route; $1k and $50k through the deepest Uniswap v3 pool on
+// Robinhood Chain, not sampled on Base).
 // Used by the local logger (scripts/logger.mts) and by /api/sample, which Supabase's scheduler calls every 10 minutes.
-import { chainlink, fills, officialAssets, poolsFor, SYMBOLS } from "./market";
+import { chainlink, fills, liquidityOf, officialAssets, poolsFor, symbolsFor } from "./market";
+import { CHAINS, type ChainKey } from "./chains";
 import { sessionAt } from "./session";
 
 export const SIZES = [1_000, 10_000, 50_000] as const;
 
 export type SampleRow = {
   at: string;
+  chain: ChainKey;
   symbol: string;
   session: string;
   ref: number;
@@ -36,10 +39,14 @@ async function mapLimit<T, R>(items: readonly T[], n: number, fn: (x: T) => Prom
   return out;
 }
 
-async function sampleOne(symbol: string, at: string, session: string): Promise<SampleRow | null> {
-  const asset = (await officialAssets()).get(symbol);
+async function sampleOne(chain: ChainKey, symbol: string, at: string, session: string): Promise<SampleRow | null> {
+  const asset = (await officialAssets(chain)).get(symbol);
   if (!asset) return null;
-  const [cl, pools] = await Promise.all([chainlink(symbol), poolsFor(asset.address).catch(() => [])]);
+  const [cl, pools, liq] = await Promise.all([
+    chainlink(symbol, chain),
+    poolsFor(asset.address, chain).catch(() => []),
+    chain === "base" ? liquidityOf(asset.address, chain) : Promise.resolve(0),
+  ]);
   if (!cl.close) return null;
   const ref = cl.close.price;
   // The best available fill (best route across all venues, or the Uniswap pool if that's better).
@@ -50,20 +57,22 @@ async function sampleOne(symbol: string, at: string, session: string): Promise<S
   const [buy1k, sell1k, buy10k, sell10k, buy50k, sell50k] = all.map((f) => f?.best.price ?? null);
   return {
     at,
+    chain,
     symbol,
     session,
     ref,
     ref_at: new Date(cl.close.updatedAt).toISOString(),
     h24: cl.h24?.price ?? null,
-    liq: Math.round(pools.reduce((t, p) => t + p.liquidityUsd, 0)),
+    liq: Math.round(chain === "base" ? liq : pools.reduce((t, p) => t + p.liquidityUsd, 0)),
     buy1k, sell1k, buy10k, sell10k, buy50k, sell50k,
   };
 }
 
-/** Samples every token in parallel (6 at a time). Tokens with no pool or price, or that fail, are left out. */
+/** Samples every token on both chains (5 at a time). Tokens with no price, or that fail, are left out. */
 export async function sampleAll(now = new Date()): Promise<SampleRow[]> {
   const at = now.toISOString();
   const session = sessionAt(now);
-  const rows = await mapLimit(SYMBOLS, 5, (s) => sampleOne(s, at, session).catch(() => null));
+  const jobs = CHAINS.flatMap((c) => symbolsFor(c).map((s) => [c, s] as const));
+  const rows = await mapLimit(jobs, 5, ([c, s]) => sampleOne(c, s, at, session).catch(() => null));
   return rows.filter((r): r is SampleRow => !!r);
 }

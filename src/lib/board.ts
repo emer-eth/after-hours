@@ -37,9 +37,10 @@ async function mapLimit<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): 
  *  Base: quoted live through the best route. */
 export async function board(chain: ChainKey = "robinhood"): Promise<BoardRow[]> {
   const assets = await officialAssets(chain);
-  if (chain === "robinhood") {
-    const snap = await latestSnapshot();
-    if (snap.length >= 10) {
+  {
+    // Both chains are logged every 10 minutes; read the latest snapshot and only quote live if there isn't one.
+    const snap = await latestSnapshot(chain);
+    if (snap.length >= (chain === "base" ? 5 : 10)) {
       return snap
         .filter((r) => r.buy10k && r.sell10k && assets.has(r.symbol))
         .map((r) => {

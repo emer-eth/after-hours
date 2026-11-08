@@ -5,7 +5,8 @@ import { pct } from "@/lib/verdict";
 async function data() {
   "use cache";
   cacheLife({ stale: 60, revalidate: 300, expire: 3600 });
-  return closedQuotes(48);
+  const [robinhood, base] = await Promise.all([closedQuotes(48, "robinhood"), closedQuotes(48, "base")]);
+  return { robinhood, base };
 }
 
 const band = (c: number) => (c >= 0.2 ? "thin" : c >= 0.0075 ? "wait" : c >= 0.003 ? "limit" : "fair");
@@ -13,7 +14,10 @@ const COLOR = { fair: "bg-good", limit: "bg-warn", wait: "bg-bad", thin: "bg-lin
 
 /** Real data as the picture: one dot per $10k sell quote the logger took while Wall Street was closed. */
 export async function DotField() {
-  const quotes = (await data()).slice(0, 600).reverse(); // oldest first, so the field fills in time order
+  const { robinhood, base } = await data();
+  const quotes = robinhood.slice(0, 600).reverse(); // oldest first, so the field fills in time order
+  const baseOk = base.filter((q) => q.cost < 0.2);
+  const baseAvg = baseOk.length >= 20 ? baseOk.reduce((t, q) => t + Math.max(0, q.cost), 0) / baseOk.length : null;
   if (quotes.length < 60) return null;
   const counts = quotes.reduce<Record<string, number>>((c, q) => ((c[band(q.cost)] = (c[band(q.cost)] || 0) + 1), c), {});
   const tradeable = quotes.filter((q) => q.cost < 0.2);
@@ -35,7 +39,7 @@ export async function DotField() {
       </div>
       <div className="reveal">
         <p className="font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
-          Each dot is one $10k sale we priced while Wall Street was closed.{" "}
+          Each dot is one $10k sale we priced on Robinhood Chain while Wall Street was closed.{" "}
           <span className="text-soft">The red ones cost more than 0.75%.</span>
         </p>
         <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden border border-line bg-line">
@@ -63,6 +67,12 @@ export async function DotField() {
             Estimate: weekend volume (Crypto Briefing) × our logged average cost of a $10k trade. Real trade sizes vary.
           </span>
         </p>
+        {baseAvg !== null && (
+          <p className="mt-4 flex items-center gap-2.5 text-[15px] text-soft">
+            <span className="size-2.5 bg-[#2151f5]" aria-hidden />
+            On Base, the same trades averaged <b className="font-medium text-ink">{pct(baseAvg)}</b>. Deeper pools, smaller gap.
+          </p>
+        )}
         <p className="mt-5 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[11px] tracking-[.12em] text-soft uppercase">
           <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-good" />Fair {counts.fair || 0}</span>
           <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-warn" />Limit {counts.limit || 0}</span>

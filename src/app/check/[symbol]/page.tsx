@@ -206,7 +206,7 @@ function Result({ r }: { r: CheckResult }) {
         </p>
       </section>
 
-      <History symbol={r.asset.symbol} side={r.side} />
+      <History symbol={r.asset.symbol} side={r.side} chain={r.chain} />
     </>
   );
 }
